@@ -32,6 +32,7 @@
   "YTMUSIC_AUTOPLAY_FETCH": "Autoplay: fetching more items for playback...",
   "YTMUSIC_AUTOPLAY_NO_ITEMS": "Autoplay: no more items available",
   "YTMUSIC_AUTOPLAY_ADDED": "Autoplay: added {} items to the queue",
+  "YTMUSIC_DOC_AUTOPLAY": "When a YouTube Music track has finished playing and there are no further items in the queue, Autoplay will automatically fetch more items and add them to the queue for playback. Note that Autoplay may not work when playing uploaded songs (but should work for a playlist containing such songs), and only works when Repeat and Random playback modes are Off.",
   "YTMUSIC_DOC_AUTOPLAY_CLEAR_QUEUE": "Clear the queue first before adding more items.",
   "YTMUSIC_ERR_SIGN_IN": "Sign in failed: {}",
   "YTMUSIC_ERR_NO_STREAM": "Could not fetch stream for {}",
