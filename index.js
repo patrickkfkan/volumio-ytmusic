@@ -38,7 +38,8 @@ ControllerYTMusic.prototype.getUIConfig = function () {
     .then(([uiconf, i18nOptions]) => {
       const i18nUIConf = uiconf.sections[0];
       const accountUIConf = uiconf.sections[1];
-      const autoplayUIConf = uiconf.sections[2];
+      const browseUIConf = uiconf.sections[2];
+      const autoplayUIConf = uiconf.sections[3];
 
       // i18n
       // -- region
@@ -121,6 +122,10 @@ ControllerYTMusic.prototype.getUIConfig = function () {
       }
 
       accountUIConf.description = authStatusDescription;
+
+      // Browse
+      const loadFullPlaylists = ytmusic.getConfigValue('loadFullPlaylists', false);
+      browseUIConf.content[0].value = loadFullPlaylists;
 
       // Autoplay
       const autoplay = ytmusic.getConfigValue('autoplay', false);
@@ -259,6 +264,12 @@ ControllerYTMusic.prototype.configSaveI18n = function (data) {
 
 ControllerYTMusic.prototype.configSignOut = function () {
   Auth.signOut();
+}
+
+ControllerYTMusic.prototype.configSaveBrowse = function (data) {
+  ytmusic.setConfigValue('loadFullPlaylists', data.loadFullPlaylists);
+
+  ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_SETTINGS_SAVED'));
 }
 
 ControllerYTMusic.prototype.configSaveAutoplay = function (data) {
