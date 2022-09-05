@@ -71,14 +71,14 @@
       ]
     },
     {
-      "id": "section_autoplay",
+      "id": "section_playback",
       "element": "section",
-      "label": "TRANSLATE.YTMUSIC_SECTION_AUTOPLAY",
+      "label": "TRANSLATE.YTMUSIC_SECTION_PLAYBACK",
       "icon": "fa-play",
       "onSave": {
         "type": "controller",
         "endpoint": "music_service/ytmusic",
-        "method": "configSaveAutoplay"
+        "method": "configSavePlayback"
       },
       "saveButton": {
         "label": "TRANSLATE.YTMUSIC_SAVE",

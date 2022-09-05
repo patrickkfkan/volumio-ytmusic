@@ -39,7 +39,7 @@ ControllerYTMusic.prototype.getUIConfig = function () {
       const i18nUIConf = uiconf.sections[0];
       const accountUIConf = uiconf.sections[1];
       const browseUIConf = uiconf.sections[2];
-      const autoplayUIConf = uiconf.sections[3];
+      const playbackUIConf = uiconf.sections[3];
 
       // i18n
       // -- region
@@ -127,11 +127,11 @@ ControllerYTMusic.prototype.getUIConfig = function () {
       const loadFullPlaylists = ytmusic.getConfigValue('loadFullPlaylists', false);
       browseUIConf.content[0].value = loadFullPlaylists;
 
-      // Autoplay
+      // Playback
       const autoplay = ytmusic.getConfigValue('autoplay', false);
       const autoplayClearQueue = ytmusic.getConfigValue('autoplayClearQueue', false);
-      autoplayUIConf.content[0].value = autoplay;
-      autoplayUIConf.content[1].value = autoplayClearQueue;
+      playbackUIConf.content[0].value = autoplay;
+      playbackUIConf.content[1].value = autoplayClearQueue;
 
       defer.resolve(uiconf);
     })
@@ -272,7 +272,7 @@ ControllerYTMusic.prototype.configSaveBrowse = function (data) {
   ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_SETTINGS_SAVED'));
 }
 
-ControllerYTMusic.prototype.configSaveAutoplay = function (data) {
+ControllerYTMusic.prototype.configSavePlayback = function (data) {
   ytmusic.setConfigValue('autoplay', data.autoplay);
   ytmusic.setConfigValue('autoplayClearQueue', data.autoplayClearQueue);
 
