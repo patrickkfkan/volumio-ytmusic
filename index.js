@@ -182,7 +182,7 @@ ControllerYTMusic.prototype.initInnerTube = function () {
   const defer = libQ.defer();
 
   const innerTube = ytmusic.get('innertube');
-  if (!innerTube) {
+  if (innerTube) {
     Auth.unregisterAuthHandlers();
     ytmusic.set('innertube', null);
   }
