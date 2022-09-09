@@ -35,7 +35,6 @@
 	"dependencies": {
 		"escape-html": "^1.0.3",
 		"kew": "^0.7.0",
-		"md5": "^2.3.0",
 		"string-format": "^2.0.0",
 		"v-conf": "^1.4.2",
 		"bottleneck": "^2.19.5",
