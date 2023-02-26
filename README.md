@@ -7,6 +7,9 @@ Credit goes to the [YouTube.js](https://github.com/LuanRT/YouTube.js) project. T
 
 ## Changelog
 
+0.2.1
+- Fix unable to sign in on Volumio rPi
+
 0.2.0
 - Fix Library content missing / incomplete due to YT Music changes
 - Remove Recap from root items because it is now part of Home
