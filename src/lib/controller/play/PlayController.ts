@@ -355,6 +355,45 @@ export default class PlayController {
       .map((item) => ExplodeHelper.createQueueItemFromExplodedTrackInfo(item));
   }
 
+  async prefetch(track: QueueItem) {
+    const prefetchEnabled = ytmusic.getConfigValue('prefetch');
+    if (!prefetchEnabled) {
+      /**
+       * Volumio doesn't check whether `prefetch()` is actually performed or
+       * successful (such as inspecting the result of the function call) -
+       * it just sets its internal state variable `prefetchDone`
+       * to `true`. This results in the next track being skipped in cases
+       * where prefetch is not performed or fails. So when we want to signal
+       * that prefetch is not done, we would have to directly falsify the
+       * statemachine's `prefetchDone` variable.
+       */
+      ytmusic.getLogger().info('[ytmusic-play] Prefetch disabled');
+      ytmusic.getStateMachine().prefetchDone = false;
+      return;
+    }
+    let streamUrl;
+    try {
+      const { videoId, info: playbackInfo } = await this.#getPlaybackInfoFromUri(track.uri);
+      streamUrl = playbackInfo?.stream?.url;
+      if (!streamUrl) {
+        throw Error(`Stream not found for: '${videoId}'`);
+      }
+    }
+    catch (error: any) {
+      ytmusic.getLogger().error(`[ytmusic-play] Prefetch failed: ${error}`);
+      ytmusic.getStateMachine().prefetchDone = false;
+      return;
+    }
+
+    const mpdPlugin = this.#mpdPlugin;
+    return kewToJSPromise(mpdPlugin.sendMpdCommand(`addid "${this.#appendTrackTypeToStreamUrl(streamUrl)}"`, [])
+      .then((addIdResp: { Id: string }) => this.#mpdAddTags(addIdResp, track))
+      .then(() => {
+        ytmusic.getLogger().info(`[ytmusic-play] Prefetched and added track to MPD queue: ${track.name}`);
+        return mpdPlugin.sendMpdCommand('consume 1', []);
+      }));
+  }
+
   async getGotoUri(type: 'album' | 'artist', uri: QueueItem['uri']): Promise<string | null> {
     const playbackInfo = (await this.#getPlaybackInfoFromUri(uri))?.info;
     if (!playbackInfo) {

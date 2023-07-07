@@ -181,10 +181,12 @@ class ControllerYTMusic {
             const autoplayClearQueue = YTMusicContext_1.default.getConfigValue('autoplayClearQueue');
             const addToHistory = YTMusicContext_1.default.getConfigValue('addToHistory');
             const prefetchEnabled = YTMusicContext_1.default.getConfigValue('prefetch');
+            const preferOpus = YTMusicContext_1.default.getConfigValue('preferOpus');
             playbackUIConf.content[0].value = autoplay;
             playbackUIConf.content[1].value = autoplayClearQueue;
             playbackUIConf.content[2].value = addToHistory;
             playbackUIConf.content[3].value = prefetchEnabled;
+            playbackUIConf.content[4].value = preferOpus;
             defer.resolve(uiconf);
         })
             .fail((error) => {
@@ -249,6 +251,7 @@ class ControllerYTMusic {
         YTMusicContext_1.default.setConfigValue('autoplayClearQueue', data.autoplayClearQueue);
         YTMusicContext_1.default.setConfigValue('addToHistory', data.addToHistory);
         YTMusicContext_1.default.setConfigValue('prefetch', data.prefetch);
+        YTMusicContext_1.default.setConfigValue('preferOpus', data.preferOpus);
         YTMusicContext_1.default.toast('success', YTMusicContext_1.default.getI18n('YTMUSIC_SETTINGS_SAVED'));
     }
     handleBrowseUri(uri) {
@@ -310,6 +313,12 @@ class ControllerYTMusic {
             return kew_1.default.reject('YouTube Music plugin is not started');
         }
         return (0, util_1.jsPromiseToKew)(__classPrivateFieldGet(this, _ControllerYTMusic_searchController, "f").search(query));
+    }
+    prefetch(track) {
+        if (!__classPrivateFieldGet(this, _ControllerYTMusic_playController, "f")) {
+            return kew_1.default.reject('YouTube Music plugin is not started');
+        }
+        return (0, util_1.jsPromiseToKew)(__classPrivateFieldGet(this, _ControllerYTMusic_playController, "f").prefetch(track));
     }
     goto(data) {
         if (!__classPrivateFieldGet(this, _ControllerYTMusic_playController, "f")) {

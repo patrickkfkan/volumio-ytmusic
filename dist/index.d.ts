@@ -25,6 +25,7 @@ declare class ControllerYTMusic {
     next(): any;
     previous(): any;
     search(query: SearchQuery): any;
+    prefetch(track: QueueItem): any;
     goto(data: GotoParams): any;
 }
 export = ControllerYTMusic;

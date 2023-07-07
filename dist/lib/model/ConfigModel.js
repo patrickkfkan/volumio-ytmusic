@@ -28,6 +28,7 @@ exports.PLUGIN_CONFIG_SCHEMA = {
     autoplayClearQueue: { defaultValue: false, json: false },
     addToHistory: { defaultValue: true, json: false },
     prefetch: { defaultValue: true, json: false },
+    preferOpus: { defaultValue: false, json: false },
     authCredentials: { defaultValue: undefined, json: true }
 };
 class ConfigModel extends BaseModel_1.BaseModel {

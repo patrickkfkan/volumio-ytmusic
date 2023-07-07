@@ -20,6 +20,7 @@ export const PLUGIN_CONFIG_SCHEMA: PluginConfigSchema = {
   autoplayClearQueue: { defaultValue: false, json: false },
   addToHistory: { defaultValue: true, json: false },
   prefetch: { defaultValue: true, json: false },
+  preferOpus: { defaultValue: false, json: false },
   authCredentials: { defaultValue: undefined, json: true }
 };
 

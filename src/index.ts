@@ -156,10 +156,12 @@ class ControllerYTMusic {
         const autoplayClearQueue = ytmusic.getConfigValue('autoplayClearQueue');
         const addToHistory = ytmusic.getConfigValue('addToHistory');
         const prefetchEnabled = ytmusic.getConfigValue('prefetch');
+        const preferOpus = ytmusic.getConfigValue('preferOpus');
         playbackUIConf.content[0].value = autoplay;
         playbackUIConf.content[1].value = autoplayClearQueue;
         playbackUIConf.content[2].value = addToHistory;
         playbackUIConf.content[3].value = prefetchEnabled;
+        playbackUIConf.content[4].value = preferOpus;
 
         defer.resolve(uiconf);
       })
@@ -322,6 +324,7 @@ class ControllerYTMusic {
     ytmusic.setConfigValue('autoplayClearQueue', data.autoplayClearQueue);
     ytmusic.setConfigValue('addToHistory', data.addToHistory);
     ytmusic.setConfigValue('prefetch', data.prefetch);
+    ytmusic.setConfigValue('preferOpus', data.preferOpus);
 
     ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_SETTINGS_SAVED'));
   }
@@ -405,6 +408,13 @@ class ControllerYTMusic {
       return libQ.reject('YouTube Music plugin is not started');
     }
     return jsPromiseToKew(this.#searchController.search(query));
+  }
+
+  prefetch(track: QueueItem) {
+    if (!this.#playController) {
+      return libQ.reject('YouTube Music plugin is not started');
+    }
+    return jsPromiseToKew(this.#playController.prefetch(track));
   }
 
   goto(data: GotoParams) {

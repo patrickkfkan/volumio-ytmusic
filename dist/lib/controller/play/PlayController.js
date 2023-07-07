@@ -132,6 +132,43 @@ class PlayController {
         YTMusicContext_1.default.getStateMachine().setConsumeUpdateService(undefined);
         return YTMusicContext_1.default.getStateMachine().previous();
     }
+    async prefetch(track) {
+        const prefetchEnabled = YTMusicContext_1.default.getConfigValue('prefetch');
+        if (!prefetchEnabled) {
+            /**
+             * Volumio doesn't check whether `prefetch()` is actually performed or
+             * successful (such as inspecting the result of the function call) -
+             * it just sets its internal state variable `prefetchDone`
+             * to `true`. This results in the next track being skipped in cases
+             * where prefetch is not performed or fails. So when we want to signal
+             * that prefetch is not done, we would have to directly falsify the
+             * statemachine's `prefetchDone` variable.
+             */
+            YTMusicContext_1.default.getLogger().info('[ytmusic-play] Prefetch disabled');
+            YTMusicContext_1.default.getStateMachine().prefetchDone = false;
+            return;
+        }
+        let streamUrl;
+        try {
+            const { videoId, info: playbackInfo } = await __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_getPlaybackInfoFromUri).call(this, track.uri);
+            streamUrl = playbackInfo?.stream?.url;
+            if (!streamUrl) {
+                throw Error(`Stream not found for: '${videoId}'`);
+            }
+        }
+        catch (error) {
+            YTMusicContext_1.default.getLogger().error(`[ytmusic-play] Prefetch failed: ${error}`);
+            YTMusicContext_1.default.getStateMachine().prefetchDone = false;
+            return;
+        }
+        const mpdPlugin = __classPrivateFieldGet(this, _PlayController_mpdPlugin, "f");
+        return (0, util_1.kewToJSPromise)(mpdPlugin.sendMpdCommand(`addid "${__classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_appendTrackTypeToStreamUrl).call(this, streamUrl)}"`, [])
+            .then((addIdResp) => __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_mpdAddTags).call(this, addIdResp, track))
+            .then(() => {
+            YTMusicContext_1.default.getLogger().info(`[ytmusic-play] Prefetched and added track to MPD queue: ${track.name}`);
+            return mpdPlugin.sendMpdCommand('consume 1', []);
+        }));
+    }
     async getGotoUri(type, uri) {
         const playbackInfo = (await __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_getPlaybackInfoFromUri).call(this, uri))?.info;
         if (!playbackInfo) {

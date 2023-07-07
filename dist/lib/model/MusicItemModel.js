@@ -9,6 +9,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 var _MusicItemModel_instances, _MusicItemModel_getTrackInfo, _MusicItemModel_extractStreamData, _MusicItemModel_getInfoFromUpNextTab;
 Object.defineProperty(exports, "__esModule", { value: true });
+const YTMusicContext_1 = __importDefault(require("../YTMusicContext"));
 const volumio_youtubei_js_1 = require("volumio-youtubei.js");
 const BaseModel_1 = require("./BaseModel");
 const InnertubeResultParser_1 = __importDefault(require("./InnertubeResultParser"));
@@ -113,7 +114,34 @@ async function _MusicItemModel_getTrackInfo(innertube, endpoint) {
     const response = await Promise.all([player_response, next_response]);
     return new volumio_youtubei_js_1.YTMusic.TrackInfo(response, innertube.actions, cpn);
 }, _MusicItemModel_extractStreamData = function _MusicItemModel_extractStreamData(innertube, info) {
-    const format = info.chooseFormat(BEST_AUDIO_FORMAT);
+    const preferredFormat = {
+        ...BEST_AUDIO_FORMAT
+    };
+    const prefetch = YTMusicContext_1.default.getConfigValue('prefetch');
+    const preferOpus = prefetch && YTMusicContext_1.default.getConfigValue('preferOpus');
+    if (preferOpus) {
+        YTMusicContext_1.default.getLogger().info('[ytmusic] Preferred format is Opus');
+        preferredFormat.format = 'opus';
+    }
+    let format;
+    try {
+        format = info.chooseFormat(preferredFormat);
+    }
+    catch (error) {
+        if (preferOpus && info) {
+            YTMusicContext_1.default.getLogger().warn('[ytmusic] No matching format for Opus. Falling back to any audio format ...');
+            try {
+                format = info.chooseFormat(BEST_AUDIO_FORMAT);
+            }
+            catch (error) {
+                YTMusicContext_1.default.getLogger().error('[ytmusic] Failed to obtain audio format:', error);
+                format = null;
+            }
+        }
+        else {
+            throw error;
+        }
+    }
     if (format) {
         const audioBitrate = ITAG_TO_BITRATE[format.itag];
         return {

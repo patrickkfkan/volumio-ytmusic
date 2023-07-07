@@ -86,7 +86,8 @@
           "autoplay",
           "autoplayClearQueue",
           "addToHistory",
-          "prefetch"
+          "prefetch",
+          "preferOpus"
         ]
       },
       "content": [
@@ -120,6 +121,17 @@
           "element": "switch",
           "label": "TRANSLATE.YTMUSIC_PREFETCH_NEXT_TRACK",
           "value": true
+        },
+        {
+          "id": "preferOpus",
+          "element": "switch",
+          "label": "TRANSLATE.YTMUSIC_PREFER_OPUS",
+          "doc": "TRANSLATE.YTMUSIC_PREFER_OPUS_DESC",
+          "value": false,
+          "visibleIf": {
+            "field": "prefetch",
+            "value": true
+          }
         }
       ]
     }

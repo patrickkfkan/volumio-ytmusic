@@ -19,6 +19,8 @@
   "YTMUSIC_AUTOPLAY_CLEAR_QUEUE": "- Clear queue first",
   "YTMUSIC_ADD_TO_HISTORY": "Add to history",
   "YTMUSIC_PREFETCH_NEXT_TRACK": "Prefetch next track",
+  "YTMUSIC_PREFER_OPUS": "Prefer gapless Opus streams (capped 160kbps)",
+  "YTMUSIC_PREFER_OPUS_DESC": "Gapless playback of YouTube media is only possible in Volumio when streamed in Opus format. If streamed in the alternative Mp4A format, you might hear a slight click between streams. On the other hand, Opus streams from YouTube are limited to 160kbps. If you have a YouTube Music Premium subscription, enabling this setting will limit your access to the higher quality 256kbps Mp4A streams offered with the subscription. Note that Uploads in your YouTube Music Library are always streamed in Mp4A format.",
   "YTMUSIC_SAVE": "Save",
   "YTMUSIC_SETTINGS_SAVED": "Settings saved",
   "YTMUSIC_REGION": "Region",

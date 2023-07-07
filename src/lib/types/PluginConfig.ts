@@ -16,6 +16,7 @@ export interface PluginConfigSchema {
   autoplayClearQueue: PluginConfigSchemaEntry<boolean>;
   addToHistory: PluginConfigSchemaEntry<boolean>;
   prefetch: PluginConfigSchemaEntry<boolean>;
+  preferOpus: PluginConfigSchemaEntry<boolean>;
   authCredentials: PluginConfigSchemaEntry<Credentials | undefined, true>;
 }
 

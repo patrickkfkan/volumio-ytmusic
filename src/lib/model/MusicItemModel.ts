@@ -1,3 +1,4 @@
+import ytmusic from '../YTMusicContext';
 import Innertube, { FormatOptions, YTNodes, Endpoints as YTEndpoints, Utils as YTUtils, YTMusic } from 'volumio-youtubei.js';
 import { BaseModel } from './BaseModel';
 import InnertubeResultParser from './InnertubeResultParser';
@@ -112,7 +113,35 @@ export default class MusicItemModel extends BaseModel {
   }
 
   #extractStreamData(innertube: Innertube, info: YTMusic.TrackInfo): MusicItemPlaybackInfo['stream'] | null {
-    const format = info.chooseFormat(BEST_AUDIO_FORMAT);
+    const preferredFormat = {
+      ...BEST_AUDIO_FORMAT
+    };
+    const prefetch = ytmusic.getConfigValue('prefetch');
+    const preferOpus = prefetch && ytmusic.getConfigValue('preferOpus');
+    if (preferOpus) {
+      ytmusic.getLogger().info('[ytmusic] Preferred format is Opus');
+      preferredFormat.format = 'opus';
+    }
+    let format;
+    try {
+      format = info.chooseFormat(preferredFormat);
+    }
+    catch (error) {
+      if (preferOpus && info) {
+        ytmusic.getLogger().warn('[ytmusic] No matching format for Opus. Falling back to any audio format ...');
+        try {
+          format = info.chooseFormat(BEST_AUDIO_FORMAT);
+        }
+        catch (error) {
+          ytmusic.getLogger().error('[ytmusic] Failed to obtain audio format:', error);
+          format = null;
+        }
+      }
+      else {
+        throw error;
+      }
+    }
+
     if (format) {
       const audioBitrate = ITAG_TO_BITRATE[format.itag];
       return {
