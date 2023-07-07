@@ -51,7 +51,6 @@ export default class MusicItemModel extends BaseModel {
     // Furthermore, the artist's channelId is possibly wrong for private uploads.
     // We return info from item in Up Next tab, while using trackInfo as fallback.
     let channelId: string | undefined;
-    console.log('musicItem.artists:', musicItem?.artists);
     if (musicItem?.artists && musicItem.artists[0]?.channelId) {
       channelId = musicItem.artists[0].channelId;
     }

@@ -44,7 +44,9 @@ _EndpointModel_instances = new WeakSet(), _EndpointModel_doGetContents = async f
     };
     const response = await innertube.actions.execute(url, payload);
     const parsed = volumio_youtubei_js_1.Parser.parseResponse(response.data); // First parse by Innertube
-    await this.expandSectionList(parsed);
+    if (url === '/search' || url === '/browse') {
+        await this.expandSectionList(parsed, url);
+    }
     return InnertubeResultParser_1.default.parseResult(parsed, endpoint); // Second parse
 };
 //# sourceMappingURL=EndpointModel.js.map

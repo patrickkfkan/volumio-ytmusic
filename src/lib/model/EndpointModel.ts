@@ -35,7 +35,9 @@ export default class EndpointModel extends BaseModel {
     };
     const response = await innertube.actions.execute(url, payload);
     const parsed = Parser.parseResponse(response.data); // First parse by Innertube
-    await this.expandSectionList(parsed);
+    if (url === '/search' || url === '/browse') {
+      await this.expandSectionList(parsed, url);
+    }
 
     return InnertubeResultParser.parseResult(parsed, endpoint); // Second parse
   }
