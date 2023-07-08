@@ -12,7 +12,7 @@ declare class ControllerYTMusic {
     onStop(): any;
     getConfigurationFiles(): string[];
     configSaveI18n(data: any): void;
-    configSignOut(): void;
+    configSignOut(): Promise<void>;
     configSaveBrowse(data: any): void;
     configSavePlayback(data: any): void;
     handleBrowseUri(uri: string): any;

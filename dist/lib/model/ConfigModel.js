@@ -94,10 +94,7 @@ class ConfigModel extends BaseModel_1.BaseModel {
 }
 exports.default = ConfigModel;
 _ConfigModel_instances = new WeakSet(), _ConfigModel_fetchSettingsPage = async function _ConfigModel_fetchSettingsPage() {
-    const innertube = this.getInnertube();
-    if (!innertube) {
-        throw Error('Innertube API not ready');
-    }
+    const { innertube } = await this.getInnertube();
     const requestData = {
         client: 'YTMUSIC'
     };

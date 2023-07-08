@@ -36,22 +36,22 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _ControllerYTMusic_instances, _ControllerYTMusic_context, _ControllerYTMusic_config, _ControllerYTMusic_commandRouter, _ControllerYTMusic_browseController, _ControllerYTMusic_searchController, _ControllerYTMusic_playController, _ControllerYTMusic_initInnertube, _ControllerYTMusic_applyI18nConfigToInnertube, _ControllerYTMusic_getConfigI18nOptions, _ControllerYTMusic_getConfigAccountInfo, _ControllerYTMusic_addToBrowseSources;
+var _ControllerYTMusic_instances, _ControllerYTMusic_context, _ControllerYTMusic_config, _ControllerYTMusic_commandRouter, _ControllerYTMusic_browseController, _ControllerYTMusic_searchController, _ControllerYTMusic_playController, _ControllerYTMusic_applyI18nConfigToInnertube, _ControllerYTMusic_getConfigI18nOptions, _ControllerYTMusic_getConfigAccountInfo, _ControllerYTMusic_getAuthStatus, _ControllerYTMusic_addToBrowseSources;
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 const kew_1 = __importDefault(require("kew"));
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 const v_conf_1 = __importDefault(require("v-conf"));
-const volumio_youtubei_js_1 = __importDefault(require("volumio-youtubei.js"));
 const YTMusicContext_1 = __importDefault(require("./lib/YTMusicContext"));
 const BrowseController_1 = __importDefault(require("./lib/controller/browse/BrowseController"));
 const SearchController_1 = __importDefault(require("./lib/controller/search/SearchController"));
 const PlayController_1 = __importDefault(require("./lib/controller/play/PlayController"));
 const util_1 = require("./lib/util");
-const Auth_1 = __importStar(require("./lib/util/Auth"));
+const Auth_1 = require("./lib/util/Auth");
 const model_1 = __importStar(require("./lib/model"));
 const ViewHelper_1 = __importDefault(require("./lib/controller/browse/view-handlers/ViewHelper"));
+const InnertubeLoader_1 = __importDefault(require("./lib/model/InnertubeLoader"));
 class ControllerYTMusic {
     constructor(context) {
         _ControllerYTMusic_instances.add(this);
@@ -78,17 +78,12 @@ class ControllerYTMusic {
         const langCode = __classPrivateFieldGet(this, _ControllerYTMusic_commandRouter, "f").sharedVars.get('language_code');
         const loadConfigPromises = [
             __classPrivateFieldGet(this, _ControllerYTMusic_commandRouter, "f").i18nJson(`${__dirname}/i18n/strings_${langCode}.json`, `${__dirname}/i18n/strings_en.json`, `${__dirname}/UIConfig.json`),
-            __classPrivateFieldGet(this, _ControllerYTMusic_instances, "m", _ControllerYTMusic_getConfigI18nOptions).call(this)
+            __classPrivateFieldGet(this, _ControllerYTMusic_instances, "m", _ControllerYTMusic_getConfigI18nOptions).call(this),
+            __classPrivateFieldGet(this, _ControllerYTMusic_instances, "m", _ControllerYTMusic_getConfigAccountInfo).call(this),
+            __classPrivateFieldGet(this, _ControllerYTMusic_instances, "m", _ControllerYTMusic_getAuthStatus).call(this)
         ];
-        const authStatus = Auth_1.default.getAuthStatus();
-        if (authStatus.status === Auth_1.AuthStatus.SignedIn) {
-            loadConfigPromises.push(__classPrivateFieldGet(this, _ControllerYTMusic_instances, "m", _ControllerYTMusic_getConfigAccountInfo).call(this));
-        }
-        else {
-            loadConfigPromises.push(kew_1.default.resolve(null));
-        }
         kew_1.default.all(loadConfigPromises)
-            .then(([uiconf, i18nOptions, account]) => {
+            .then(([uiconf, i18nOptions, account, authStatus]) => {
             const i18nUIConf = uiconf.sections[0];
             const accountUIConf = uiconf.sections[1];
             const browseUIConf = uiconf.sections[2];
@@ -102,7 +97,6 @@ class ControllerYTMusic {
             i18nUIConf.content[1].options = i18nOptions.options.language.optionValues;
             i18nUIConf.content[1].value = i18nOptions.selected.language;
             // Account
-            const authStatus = Auth_1.default.getAuthStatus();
             let authStatusDescription;
             switch (authStatus.status) {
                 case Auth_1.AuthStatus.SignedIn:
@@ -202,23 +196,19 @@ class ControllerYTMusic {
         return kew_1.default.resolve();
     }
     onStart() {
-        const defer = kew_1.default.defer();
         YTMusicContext_1.default.init(__classPrivateFieldGet(this, _ControllerYTMusic_context, "f"), __classPrivateFieldGet(this, _ControllerYTMusic_config, "f"));
         __classPrivateFieldSet(this, _ControllerYTMusic_browseController, new BrowseController_1.default(), "f");
         __classPrivateFieldSet(this, _ControllerYTMusic_searchController, new SearchController_1.default(), "f");
         __classPrivateFieldSet(this, _ControllerYTMusic_playController, new PlayController_1.default(), "f");
-        __classPrivateFieldGet(this, _ControllerYTMusic_instances, "m", _ControllerYTMusic_initInnertube).call(this).then(() => {
-            __classPrivateFieldGet(this, _ControllerYTMusic_instances, "m", _ControllerYTMusic_addToBrowseSources).call(this);
-            defer.resolve();
-        });
-        return defer.promise;
+        __classPrivateFieldGet(this, _ControllerYTMusic_instances, "m", _ControllerYTMusic_addToBrowseSources).call(this);
+        return kew_1.default.resolve();
     }
     onStop() {
         __classPrivateFieldGet(this, _ControllerYTMusic_commandRouter, "f").volumioRemoveToBrowseSources('YouTube Music');
         __classPrivateFieldSet(this, _ControllerYTMusic_browseController, null, "f");
         __classPrivateFieldSet(this, _ControllerYTMusic_searchController, null, "f");
         __classPrivateFieldSet(this, _ControllerYTMusic_playController, null, "f");
-        Auth_1.default.unregisterHandlers();
+        InnertubeLoader_1.default.reset();
         YTMusicContext_1.default.reset();
         return kew_1.default.resolve();
     }
@@ -239,8 +229,11 @@ class ControllerYTMusic {
         }
         YTMusicContext_1.default.toast('success', YTMusicContext_1.default.getI18n('YTMUSIC_SETTINGS_SAVED'));
     }
-    configSignOut() {
-        Auth_1.default.signOut();
+    async configSignOut() {
+        if (InnertubeLoader_1.default.hasInstance()) {
+            const { auth } = await InnertubeLoader_1.default.getInstance();
+            auth.signOut();
+        }
     }
     configSaveBrowse(data) {
         YTMusicContext_1.default.setConfigValue('loadFullPlaylists', data.loadFullPlaylists);
@@ -355,25 +348,7 @@ class ControllerYTMusic {
         return defer.promise;
     }
 }
-_ControllerYTMusic_context = new WeakMap(), _ControllerYTMusic_config = new WeakMap(), _ControllerYTMusic_commandRouter = new WeakMap(), _ControllerYTMusic_browseController = new WeakMap(), _ControllerYTMusic_searchController = new WeakMap(), _ControllerYTMusic_playController = new WeakMap(), _ControllerYTMusic_applyI18nConfigToInnertube = new WeakMap(), _ControllerYTMusic_instances = new WeakSet(), _ControllerYTMusic_initInnertube = function _ControllerYTMusic_initInnertube() {
-    const defer = kew_1.default.defer();
-    const innerTube = YTMusicContext_1.default.get('innertube');
-    if (innerTube) {
-        Auth_1.default.unregisterHandlers();
-        YTMusicContext_1.default.set('innertube', null);
-    }
-    volumio_youtubei_js_1.default.create().then((innerTube) => {
-        YTMusicContext_1.default.set('innertube', innerTube);
-        __classPrivateFieldGet(this, _ControllerYTMusic_applyI18nConfigToInnertube, "f").call(this);
-        Auth_1.default.registerHandlers();
-        Auth_1.default.signIn();
-        defer.resolve(innerTube);
-    })
-        .catch((error) => {
-        defer.reject(error);
-    });
-    return defer.promise;
-}, _ControllerYTMusic_getConfigI18nOptions = function _ControllerYTMusic_getConfigI18nOptions() {
+_ControllerYTMusic_context = new WeakMap(), _ControllerYTMusic_config = new WeakMap(), _ControllerYTMusic_commandRouter = new WeakMap(), _ControllerYTMusic_browseController = new WeakMap(), _ControllerYTMusic_searchController = new WeakMap(), _ControllerYTMusic_playController = new WeakMap(), _ControllerYTMusic_applyI18nConfigToInnertube = new WeakMap(), _ControllerYTMusic_instances = new WeakSet(), _ControllerYTMusic_getConfigI18nOptions = function _ControllerYTMusic_getConfigI18nOptions() {
     const defer = kew_1.default.defer();
     const model = model_1.default.getInstance(model_1.ModelType.Config);
     model.getI18nOptions().then((options) => {
@@ -402,6 +377,16 @@ _ControllerYTMusic_context = new WeakMap(), _ControllerYTMusic_config = new Weak
     })
         .catch((error) => {
         YTMusicContext_1.default.getLogger().warn(`Failed to get account config: ${error}`);
+        defer.resolve(null);
+    });
+    return defer.promise;
+}, _ControllerYTMusic_getAuthStatus = function _ControllerYTMusic_getAuthStatus() {
+    const defer = kew_1.default.defer();
+    InnertubeLoader_1.default.getInstance().then(({ auth }) => {
+        defer.resolve(auth.getStatus());
+    })
+        .catch((error) => {
+        YTMusicContext_1.default.getLogger().warn(`Failed to get auth status: ${error}`);
         defer.resolve(null);
     });
     return defer.promise;

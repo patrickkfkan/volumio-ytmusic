@@ -39,10 +39,7 @@ class MusicItemModel extends BaseModel_1.BaseModel {
         if (!EndpointHelper_1.default.isType(endpoint, Endpoint_1.EndpointType.Watch) || !endpoint.payload.videoId) {
             throw Error('Invalid endpoint');
         }
-        const innertube = this.getInnertube();
-        if (!innertube) {
-            throw Error('Innertube API not ready');
-        }
+        const { innertube } = await this.getInnertube();
         const trackInfo = await __classPrivateFieldGet(this, _MusicItemModel_instances, "m", _MusicItemModel_getTrackInfo).call(this, innertube, endpoint);
         const streamData = __classPrivateFieldGet(this, _MusicItemModel_instances, "m", _MusicItemModel_extractStreamData).call(this, innertube, trackInfo);
         // `trackInfo` does not contain album info - need to obtain from item in Up Next tab.

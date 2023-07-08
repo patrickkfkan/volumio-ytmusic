@@ -1,35 +1,13 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const YTMusicContext_1 = __importDefault(require("../../../YTMusicContext"));
 const model_1 = require("../../../model");
+const InnertubeLoader_1 = __importDefault(require("../../../model/InnertubeLoader"));
 const Endpoint_1 = require("../../../types/Endpoint");
-const Auth_1 = __importStar(require("../../../util/Auth"));
+const Auth_1 = require("../../../util/Auth");
 const AutoplayHelper_1 = __importDefault(require("../../../util/AutoplayHelper"));
 const EndpointHelper_1 = __importDefault(require("../../../util/EndpointHelper"));
 const ExplodeHelper_1 = __importDefault(require("../../../util/ExplodeHelper"));
@@ -46,9 +24,10 @@ const REQUIRES_SIGNIN_BROWSE_IDS = [
 class GenericViewHandler extends FeedViewHandler_1.default {
     async browse() {
         const endpoint = this.getEndpoint();
+        const { auth } = await InnertubeLoader_1.default.getInstance();
         if (EndpointHelper_1.default.isType(endpoint, Endpoint_1.EndpointType.Browse) &&
             REQUIRES_SIGNIN_BROWSE_IDS.includes(endpoint.payload.browseId) &&
-            Auth_1.default.getAuthStatus().status !== Auth_1.AuthStatus.SignedIn) {
+            auth.getStatus().status !== Auth_1.AuthStatus.SignedIn) {
             YTMusicContext_1.default.toast('error', YTMusicContext_1.default.getI18n('YTMUSIC_ERR_REQUIRE_SIGN_IN'));
             throw Error(YTMusicContext_1.default.getI18n('YTMUSIC_ERR_REQUIRE_SIGN_IN'));
         }

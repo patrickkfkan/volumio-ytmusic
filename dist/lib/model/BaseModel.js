@@ -5,17 +5,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BaseModel = void 0;
 const volumio_youtubei_js_1 = require("volumio-youtubei.js");
-const YTMusicContext_1 = __importDefault(require("../YTMusicContext"));
+const InnertubeLoader_1 = __importDefault(require("./InnertubeLoader"));
 const MAX_APPEND_SECTIONS_COUNT = 10;
 class BaseModel {
     getInnertube() {
-        return YTMusicContext_1.default.get('innertube');
+        return InnertubeLoader_1.default.getInstance();
     }
     async expandSectionList(response, url) {
-        const innertube = this.getInnertube();
-        if (!innertube) {
-            throw Error('Innertube API not ready');
-        }
+        const { innertube } = await this.getInnertube();
         const sectionList = response.contents_memo?.getType(volumio_youtubei_js_1.YTNodes.SectionList)?.first();
         if (sectionList) {
             let sectionListContinuation = sectionList.continuation;

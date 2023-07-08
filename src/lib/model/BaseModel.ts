@@ -1,19 +1,16 @@
-import Innertube, { IParsedResponse, Parser, SectionListContinuation, YTNodes } from 'volumio-youtubei.js';
-import ytmusic from '../YTMusicContext';
+import { IParsedResponse, Parser, SectionListContinuation, YTNodes } from 'volumio-youtubei.js';
+import InnertubeLoader from './InnertubeLoader';
 
 const MAX_APPEND_SECTIONS_COUNT = 10;
 
 export abstract class BaseModel {
 
   protected getInnertube() {
-    return ytmusic.get<Innertube>('innertube');
+    return InnertubeLoader.getInstance();
   }
 
   protected async expandSectionList(response: IParsedResponse, url: '/browse' | '/search') {
-    const innertube = this.getInnertube();
-    if (!innertube) {
-      throw Error('Innertube API not ready');
-    }
+    const { innertube } = await this.getInnertube();
     const sectionList = response.contents_memo?.getType(YTNodes.SectionList)?.first();
     if (sectionList) {
       let sectionListContinuation = sectionList.continuation;

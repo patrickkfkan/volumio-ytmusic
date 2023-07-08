@@ -11,11 +11,12 @@ import BrowseController from './lib/controller/browse/BrowseController';
 import SearchController, { SearchQuery } from './lib/controller/search/SearchController';
 import PlayController from './lib/controller/play/PlayController';
 import { jsPromiseToKew } from './lib/util';
-import Auth, { AuthStatus } from './lib/util/Auth';
+import { AuthStatus } from './lib/util/Auth';
 import Model, { ModelType } from './lib/model';
 import { Account, I18nOptionValue, I18nOptions } from './lib/types/PluginConfig';
 import { QueueItem } from './lib/controller/browse/view-handlers/ExplodableViewHandler';
 import ViewHelper from './lib/controller/browse/view-handlers/ViewHelper';
+import InnertubeLoader from './lib/model/InnertubeLoader';
 
 interface GotoParams extends QueueItem {
   type: 'album' | 'artist';
@@ -43,19 +44,13 @@ class ControllerYTMusic {
       this.#commandRouter.i18nJson(`${__dirname}/i18n/strings_${langCode}.json`,
         `${__dirname}/i18n/strings_en.json`,
         `${__dirname}/UIConfig.json`),
-      this.#getConfigI18nOptions()
+      this.#getConfigI18nOptions(),
+      this.#getConfigAccountInfo(),
+      this.#getAuthStatus()
     ];
 
-    const authStatus = Auth.getAuthStatus();
-    if (authStatus.status === AuthStatus.SignedIn) {
-      loadConfigPromises.push(this.#getConfigAccountInfo());
-    }
-    else {
-      loadConfigPromises.push(libQ.resolve(null));
-    }
-
     libQ.all(loadConfigPromises)
-      .then(([ uiconf, i18nOptions, account ]: any) => {
+      .then(([ uiconf, i18nOptions, account, authStatus ]: any) => {
         const i18nUIConf = uiconf.sections[0];
         const accountUIConf = uiconf.sections[1];
         const browseUIConf = uiconf.sections[2];
@@ -71,7 +66,6 @@ class ControllerYTMusic {
         i18nUIConf.content[1].value = i18nOptions.selected.language;
 
         // Account
-        const authStatus = Auth.getAuthStatus();
         let authStatusDescription;
         switch (authStatus.status) {
           case AuthStatus.SignedIn:
@@ -182,20 +176,15 @@ class ControllerYTMusic {
   }
 
   onStart() {
-    const defer = libQ.defer();
-
     ytmusic.init(this.#context, this.#config);
 
     this.#browseController = new BrowseController();
     this.#searchController = new SearchController();
     this.#playController = new PlayController();
 
-    this.#initInnertube().then(() => {
-      this.#addToBrowseSources();
-      defer.resolve();
-    });
+    this.#addToBrowseSources();
 
-    return defer.promise;
+    return libQ.resolve();
   }
 
   onStop() {
@@ -205,34 +194,10 @@ class ControllerYTMusic {
     this.#searchController = null;
     this.#playController = null;
 
-    Auth.unregisterHandlers();
-
+    InnertubeLoader.reset();
     ytmusic.reset();
 
     return libQ.resolve();
-  }
-
-  #initInnertube() {
-    const defer = libQ.defer();
-
-    const innerTube = ytmusic.get('innertube');
-    if (innerTube) {
-      Auth.unregisterHandlers();
-      ytmusic.set('innertube', null);
-    }
-
-    Innertube.create().then((innerTube) => {
-      ytmusic.set('innertube', innerTube);
-      this.#applyI18nConfigToInnertube();
-      Auth.registerHandlers();
-      Auth.signIn();
-      defer.resolve(innerTube);
-    })
-      .catch((error) => {
-        defer.reject(error);
-      });
-
-    return defer.promise;
   }
 
   #applyI18nConfigToInnertube = function () {
@@ -291,6 +256,20 @@ class ControllerYTMusic {
     return defer.promise;
   }
 
+  #getAuthStatus() {
+    const defer = libQ.defer();
+
+    InnertubeLoader.getInstance().then(({ auth }) => {
+      defer.resolve(auth.getStatus());
+    })
+      .catch((error) => {
+        ytmusic.getLogger().warn(`Failed to get auth status: ${error}`);
+        defer.resolve(null);
+      });
+
+    return defer.promise;
+  }
+
   configSaveI18n(data: any) {
     const oldRegion = ytmusic.hasConfigKey('region') ? ytmusic.getConfigValue('region') : null;
     const oldLanguage = ytmusic.hasConfigKey('language') ? ytmusic.getConfigValue('language') : null;
@@ -309,8 +288,11 @@ class ControllerYTMusic {
     ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_SETTINGS_SAVED'));
   }
 
-  configSignOut() {
-    Auth.signOut();
+  async configSignOut() {
+    if (InnertubeLoader.hasInstance()) {
+      const { auth } = await InnertubeLoader.getInstance();
+      auth.signOut();
+    }
   }
 
   configSaveBrowse(data: any) {

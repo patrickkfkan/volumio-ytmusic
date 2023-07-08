@@ -89,11 +89,7 @@ export default class ConfigModel extends BaseModel {
   }
 
   async #fetchSettingsPage() {
-    const innertube = this.getInnertube();
-
-    if (!innertube) {
-      throw Error('Innertube API not ready');
-    }
+    const { innertube } = await this.getInnertube();
 
     const requestData = {
       client: 'YTMUSIC'

@@ -30,11 +30,7 @@ export default class MusicItemModel extends BaseModel {
     if (!EndpointHelper.isType(endpoint, EndpointType.Watch) || !endpoint.payload.videoId) {
       throw Error('Invalid endpoint');
     }
-    const innertube = this.getInnertube();
-    if (!innertube) {
-      throw Error('Innertube API not ready');
-    }
-
+    const { innertube } = await this.getInnertube();
     const trackInfo = await this.#getTrackInfo(innertube, endpoint);
     const streamData = this.#extractStreamData(innertube, trackInfo);
 
