@@ -23,7 +23,7 @@ class MusicFolderViewHandler extends GenericViewHandler_1.default {
             const endpoints = view.endpoints;
             return (explode ? endpoints.watch : endpoints.browse) || null;
         }
-        return super.getEndpoint();
+        return super.getEndpoint(explode);
     }
 }
 exports.default = MusicFolderViewHandler;

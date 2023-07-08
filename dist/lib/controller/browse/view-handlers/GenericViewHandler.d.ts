@@ -15,6 +15,7 @@ export default class GenericViewHandler<V extends GenericViewBase = GenericView>
     protected assertPageContents(content: PageContent | WatchContent | WatchContinuationContent | null): PageContent;
     protected getTracksOnExplode(): Promise<import("./ExplodableViewHandler").ExplodedTrackInfo[]>;
     protected getEndpoint(explode: true): BrowseEndpoint | WatchEndpoint | WatchContinuationEndpoint | null;
-    protected getEndpoint(explode?: false): BrowseEndpoint | BrowseContinuationEndpoint | SearchEndpoint | SearchContinuationEndpoint | null;
+    protected getEndpoint(explode: false | undefined): BrowseEndpoint | BrowseContinuationEndpoint | SearchEndpoint | SearchContinuationEndpoint | null;
+    protected getEndpoint(explode?: boolean): BrowseEndpoint | BrowseContinuationEndpoint | SearchEndpoint | SearchContinuationEndpoint | WatchEndpoint | WatchContinuationEndpoint | null;
 }
 //# sourceMappingURL=GenericViewHandler.d.ts.map

@@ -25,14 +25,15 @@ export default abstract class MusicFolderViewHandler<T extends MusicFolderView> 
   }
 
   protected getEndpoint(explode: true): WatchEndpoint | BrowseEndpoint | WatchContinuationEndpoint | null;
-  protected getEndpoint(explode?: false | undefined): BrowseEndpoint | BrowseContinuationEndpoint | SearchEndpoint | SearchContinuationEndpoint | null;
+  protected getEndpoint(explode: false | undefined): BrowseEndpoint | BrowseContinuationEndpoint | SearchEndpoint | SearchContinuationEndpoint | null;
+  protected getEndpoint(explode?: boolean | undefined): WatchEndpoint | BrowseEndpoint | WatchContinuationEndpoint | BrowseContinuationEndpoint | SearchEndpoint | SearchContinuationEndpoint | null;
   protected getEndpoint(explode?: boolean | undefined): Endpoint | null {
     const view = this.currentView;
     if (!view.continuation) {
       const endpoints = view.endpoints;
       return (explode ? endpoints.watch : endpoints.browse) || null;
     }
-    return super.getEndpoint();
+    return super.getEndpoint(explode);
   }
 
   protected abstract modelGetContents(endpoint: BrowseEndpoint | BrowseContinuationEndpoint | WatchEndpoint |

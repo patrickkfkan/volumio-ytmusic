@@ -124,7 +124,9 @@ export default class GenericViewHandler<V extends GenericViewBase = GenericView>
   }
 
   protected getEndpoint(explode: true): BrowseEndpoint | WatchEndpoint | WatchContinuationEndpoint | null;
-  protected getEndpoint(explode?: false): BrowseEndpoint | BrowseContinuationEndpoint | SearchEndpoint | SearchContinuationEndpoint | null;
+  protected getEndpoint(explode: false | undefined): BrowseEndpoint | BrowseContinuationEndpoint | SearchEndpoint | SearchContinuationEndpoint | null;
+  protected getEndpoint(explode?: boolean): BrowseEndpoint | BrowseContinuationEndpoint |
+    SearchEndpoint | SearchContinuationEndpoint | WatchEndpoint | WatchContinuationEndpoint | null;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected getEndpoint(explode?: boolean): Endpoint | null {
     const view = this.currentView;
