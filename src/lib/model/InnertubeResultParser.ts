@@ -726,6 +726,7 @@ export default class InnertubeResultParser {
         title: string | null = null,
         subtitle: string | null = null,
         endpoint: WatchEndpoint | null = null,
+        radioEndpoint: WatchEndpoint | null = null,
         thumbnail: string | null = null,
         trackNumber: string | null = null,
         duration: number | null = null,
@@ -736,6 +737,7 @@ export default class InnertubeResultParser {
         title = this.unwrap(data.title);
         subtitle = this.unwrap(data.subtitle);
         endpoint = this.parseEndpoint(this.unwrap(data.overlay?.content?.endpoint), EndpointType.Watch);
+        radioEndpoint = this.findRadioEndpoint(data);
         thumbnail = this.parseThumbnail(data.thumbnails);
         trackNumber = this.unwrap(data.index);
         duration = data.duration?.seconds || null;
@@ -757,12 +759,14 @@ export default class InnertubeResultParser {
         title = this.unwrap(data.title);
         subtitle = this.unwrap(data.subtitle);
         endpoint = this.parseEndpoint(data.endpoint, EndpointType.Watch);
+        radioEndpoint = this.findRadioEndpoint(data);
         thumbnail = this.parseThumbnail(data.thumbnail);
       }
       if (data instanceof YTNodes.PlaylistPanelVideo) {
         videoId = data.video_id;
         title = this.unwrap(data.title);
         endpoint = this.parseEndpoint(data.endpoint, EndpointType.Watch);
+        radioEndpoint = this.findRadioEndpoint(data);
         thumbnail = this.parseThumbnail(data.thumbnail);
         if (data.album) {
           album = {
@@ -803,6 +807,9 @@ export default class InnertubeResultParser {
         }
         if (album) {
           result.album = album;
+        }
+        if (radioEndpoint) {
+          result.radioEndpoint = radioEndpoint;
         }
 
         const artists = this.#parseArtists(data);
@@ -1272,6 +1279,26 @@ export default class InnertubeResultParser {
       }
     }
 
+    return null;
+  }
+
+  static findRadioEndpoint(data: YTHelpers.YTNode): WatchEndpoint | null {
+    if ((data instanceof YTNodes.MusicResponsiveListItem ||
+      data instanceof YTNodes.MusicTwoRowItem ||
+      data instanceof YTNodes.PlaylistPanelVideo) && data.menu) {
+
+      const menu = this.unwrap(data.menu);
+      if (menu && menu instanceof YTNodes.Menu) {
+        for (const item of menu.items) {
+          if (item instanceof YTNodes.MenuNavigationItem && item.icon_type === 'MIX') {
+            const endpoint = this.parseEndpoint(item.endpoint, EndpointType.Watch);
+            if (endpoint) {
+              return endpoint;
+            }
+          }
+        }
+      }
+    }
     return null;
   }
 

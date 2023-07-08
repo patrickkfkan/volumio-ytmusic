@@ -10,6 +10,7 @@ export default class InnertubeResultParser {
         contents: any;
     }, originatingEndpoint: T): ContentOf<T> | null;
     static parseContentItem(data?: YTHelpers.YTNode | null): SectionItem | ContentItem.Automix | null;
+    static findRadioEndpoint(data: YTHelpers.YTNode): WatchEndpoint | null;
     static unwrap(data?: 'N/A' | ''): null;
     static unwrap(data?: string | YTMisc.Text): string | null;
     static unwrap(data?: YTHelpers.SuperParsedResult<YTHelpers.YTNode> | null): YTHelpers.ObservedArray<YTHelpers.YTNode> | YTHelpers.YTNode | null;

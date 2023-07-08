@@ -68,7 +68,8 @@ export default class MusicItemModel extends BaseModel {
       duration: trackInfo.basic_info.duration,
       addToHistory: () => {
         return trackInfo.addToWatchHistory();
-      }
+      },
+      radioEndpoint: musicItem?.radioEndpoint
     };
   }
 

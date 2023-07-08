@@ -55,12 +55,13 @@ class InnertubeResultParser {
             musicItemType = 'video';
         }
         if (musicItemType) {
-            let videoId, title = null, subtitle = null, endpoint = null, thumbnail = null, trackNumber = null, duration = null, album = null;
+            let videoId, title = null, subtitle = null, endpoint = null, radioEndpoint = null, thumbnail = null, trackNumber = null, duration = null, album = null;
             if (data instanceof volumio_youtubei_js_1.YTNodes.MusicResponsiveListItem) {
                 videoId = data.id;
                 title = this.unwrap(data.title);
                 subtitle = this.unwrap(data.subtitle);
                 endpoint = this.parseEndpoint(this.unwrap(data.overlay?.content?.endpoint), Endpoint_1.EndpointType.Watch);
+                radioEndpoint = this.findRadioEndpoint(data);
                 thumbnail = this.parseThumbnail(data.thumbnails);
                 trackNumber = this.unwrap(data.index);
                 duration = data.duration?.seconds || null;
@@ -82,12 +83,14 @@ class InnertubeResultParser {
                 title = this.unwrap(data.title);
                 subtitle = this.unwrap(data.subtitle);
                 endpoint = this.parseEndpoint(data.endpoint, Endpoint_1.EndpointType.Watch);
+                radioEndpoint = this.findRadioEndpoint(data);
                 thumbnail = this.parseThumbnail(data.thumbnail);
             }
             if (data instanceof volumio_youtubei_js_1.YTNodes.PlaylistPanelVideo) {
                 videoId = data.video_id;
                 title = this.unwrap(data.title);
                 endpoint = this.parseEndpoint(data.endpoint, Endpoint_1.EndpointType.Watch);
+                radioEndpoint = this.findRadioEndpoint(data);
                 thumbnail = this.parseThumbnail(data.thumbnail);
                 if (data.album) {
                     album = {
@@ -126,6 +129,9 @@ class InnertubeResultParser {
                 }
                 if (album) {
                     result.album = album;
+                }
+                if (radioEndpoint) {
+                    result.radioEndpoint = radioEndpoint;
                 }
                 const artists = __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseArtists).call(this, data);
                 if (artists && artists.channels.length > 0) {
@@ -341,6 +347,24 @@ class InnertubeResultParser {
                 return result;
             }
             return null;
+        }
+        return null;
+    }
+    static findRadioEndpoint(data) {
+        if ((data instanceof volumio_youtubei_js_1.YTNodes.MusicResponsiveListItem ||
+            data instanceof volumio_youtubei_js_1.YTNodes.MusicTwoRowItem ||
+            data instanceof volumio_youtubei_js_1.YTNodes.PlaylistPanelVideo) && data.menu) {
+            const menu = this.unwrap(data.menu);
+            if (menu && menu instanceof volumio_youtubei_js_1.YTNodes.Menu) {
+                for (const item of menu.items) {
+                    if (item instanceof volumio_youtubei_js_1.YTNodes.MenuNavigationItem && item.icon_type === 'MIX') {
+                        const endpoint = this.parseEndpoint(item.endpoint, Endpoint_1.EndpointType.Watch);
+                        if (endpoint) {
+                            return endpoint;
+                        }
+                    }
+                }
+            }
         }
         return null;
     }

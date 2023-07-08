@@ -337,48 +337,67 @@ _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = ne
 }, _PlayController_getAutoplayItems = async function _PlayController_getAutoplayItems() {
     const explodedTrackInfo = __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_getExplodedTrackInfoFromUri).call(this, __classPrivateFieldGet(this, _PlayController_lastPlaybackInfo, "f")?.track?.uri);
     const autoplayContext = explodedTrackInfo?.autoplayContext;
-    if (!autoplayContext) {
-        return [];
+    if (autoplayContext) {
+        YTMusicContext_1.default.getLogger().info(`[ytmusic-play] Obtaining autoplay videos from endpoint: ${JSON.stringify(autoplayContext.fetchEndpoint)}`);
     }
-    YTMusicContext_1.default.getLogger().info(`[ytmusic-play] Obtaining autoplay videos from endpoint: ${JSON.stringify(autoplayContext.fetchEndpoint)}`);
+    else {
+        YTMusicContext_1.default.getLogger().info('[ytmusic-play] No autoplay context provided');
+    }
     const endpointModel = model_1.default.getInstance(model_1.ModelType.Endpoint);
-    const contents = await endpointModel.getContents(autoplayContext.fetchEndpoint);
-    if (!contents) {
-        return [];
-    }
+    const contents = autoplayContext ? await endpointModel.getContents(autoplayContext.fetchEndpoint) : null;
     const autoplayItems = [];
-    let items;
     let newAutoplayContext = null;
-    if (contents.isContinuation) { // WatchContinuationContent
-        items = contents.items;
-    }
-    else { // WatchContent
-        items = contents.playlist?.items;
-    }
-    if (items) {
-        const continueFromVideoId = autoplayContext.fetchEndpoint.payload.videoId;
-        let currentIndex = 0;
-        if (continueFromVideoId) {
-            currentIndex = items?.findIndex((item) => item.videoId === continueFromVideoId) || 0;
+    if (contents) {
+        let items;
+        if (contents.isContinuation) { // WatchContinuationContent
+            items = contents.items;
         }
-        if (currentIndex < 0) {
-            currentIndex = 0;
+        else { // WatchContent
+            items = contents.playlist?.items;
         }
-        const itemsAfter = items?.slice(currentIndex + 1).filter((item) => item.type === 'video' || item.type === 'song') || [];
-        autoplayItems.push(...itemsAfter);
-        YTMusicContext_1.default.getLogger().info(`[ytmusic-play] Obtained ${itemsAfter.length} items for autoplay from current playlist`);
-        if (itemsAfter.length > 0) {
-            newAutoplayContext = AutoplayHelper_1.default.getAutoplayContext(contents);
-        }
-    }
-    if (autoplayItems.length <= 5 && !contents.isContinuation && contents.automix) {
-        const automixContents = await endpointModel.getContents(contents.automix.endpoint);
-        const items = automixContents?.playlist?.items;
         if (items) {
-            autoplayItems.push(...items);
-            YTMusicContext_1.default.getLogger().info(`[ytmusic-play] Obtained ${items.length} items for autoplay from automix`);
-            if (items.length > 0) {
-                newAutoplayContext = AutoplayHelper_1.default.getAutoplayContext(automixContents);
+            const continueFromVideoId = autoplayContext?.fetchEndpoint.payload.videoId;
+            let currentIndex = 0;
+            if (continueFromVideoId) {
+                currentIndex = items?.findIndex((item) => item.videoId === continueFromVideoId) || 0;
+            }
+            if (currentIndex < 0) {
+                currentIndex = 0;
+            }
+            const itemsAfter = items?.slice(currentIndex + 1).filter((item) => item.type === 'video' || item.type === 'song') || [];
+            autoplayItems.push(...itemsAfter);
+            YTMusicContext_1.default.getLogger().info(`[ytmusic-play] Obtained ${itemsAfter.length} items for autoplay from current playlist`);
+            if (itemsAfter.length > 0) {
+                newAutoplayContext = AutoplayHelper_1.default.getAutoplayContext(contents);
+            }
+        }
+        if (autoplayItems.length <= 5 && !contents.isContinuation && contents.automix) {
+            const automixContents = await endpointModel.getContents(contents.automix.endpoint);
+            const items = automixContents?.playlist?.items;
+            if (items) {
+                autoplayItems.push(...items);
+                YTMusicContext_1.default.getLogger().info(`[ytmusic-play] Obtained ${items.length} items for autoplay from automix`);
+                if (items.length > 0) {
+                    newAutoplayContext = AutoplayHelper_1.default.getAutoplayContext(automixContents);
+                }
+            }
+        }
+    }
+    if (autoplayItems.length === 0) {
+        // Fetch from radio endpoint as last resort.
+        const playbackInfo = await __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_getPlaybackInfoFromUri).call(this, __classPrivateFieldGet(this, _PlayController_lastPlaybackInfo, "f").track.uri);
+        const radioEndpoint = playbackInfo.info?.radioEndpoint;
+        if (radioEndpoint && (!autoplayContext || radioEndpoint.payload.playlistId !== autoplayContext.fetchEndpoint.payload.playlistId)) {
+            const radioContents = await endpointModel.getContents(radioEndpoint);
+            const items = radioContents?.playlist?.items;
+            if (items) {
+                const currentIndex = items.findIndex((item) => item.videoId === playbackInfo.videoId) || 0;
+                const itemsAfter = items.slice(currentIndex + 1).filter((item) => item.type === 'video' || item.type === 'song') || [];
+                autoplayItems.push(...itemsAfter);
+                YTMusicContext_1.default.getLogger().info(`[ytmusic-play] Obtained ${itemsAfter.length} items for autoplay from radio`);
+                if (items.length > 0) {
+                    newAutoplayContext = AutoplayHelper_1.default.getAutoplayContext(radioContents);
+                }
             }
         }
     }

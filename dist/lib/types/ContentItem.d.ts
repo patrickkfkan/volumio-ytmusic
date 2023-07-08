@@ -17,6 +17,7 @@ export interface MusicItem {
     thumbnail?: string;
     duration?: number;
     endpoint: WatchEndpoint;
+    radioEndpoint?: WatchEndpoint;
     autoplayContext?: AutoplayContext;
 }
 export interface MusicFolder {

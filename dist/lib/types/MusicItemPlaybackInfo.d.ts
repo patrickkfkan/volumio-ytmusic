@@ -1,3 +1,4 @@
+import { WatchEndpoint } from './Endpoint';
 interface MusicItemPlaybackInfo {
     title?: string;
     artist: {
@@ -12,6 +13,7 @@ interface MusicItemPlaybackInfo {
     stream?: MusicItemStream | null;
     duration?: number;
     addToHistory: () => Promise<any>;
+    radioEndpoint?: WatchEndpoint;
 }
 interface MusicItemStream {
     url: string;

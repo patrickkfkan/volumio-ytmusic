@@ -292,54 +292,72 @@ export default class PlayController {
     const explodedTrackInfo = this.#getExplodedTrackInfoFromUri(this.#lastPlaybackInfo?.track?.uri);
     const autoplayContext = explodedTrackInfo?.autoplayContext;
 
-    if (!autoplayContext) {
-      return [];
+    if (autoplayContext) {
+      ytmusic.getLogger().info(`[ytmusic-play] Obtaining autoplay videos from endpoint: ${JSON.stringify(autoplayContext.fetchEndpoint)}`);
     }
-
-    ytmusic.getLogger().info(`[ytmusic-play] Obtaining autoplay videos from endpoint: ${JSON.stringify(autoplayContext.fetchEndpoint)}`);
+    else {
+      ytmusic.getLogger().info('[ytmusic-play] No autoplay context provided');
+    }
 
     const endpointModel = Model.getInstance(ModelType.Endpoint);
-    const contents = await endpointModel.getContents(autoplayContext.fetchEndpoint);
-
-    if (!contents) {
-      return [];
-    }
+    const contents = autoplayContext ? await endpointModel.getContents(autoplayContext.fetchEndpoint) : null;
 
     const autoplayItems: ContentItem.MusicItem[] = [];
-
-    let items;
     let newAutoplayContext: AutoplayContext | null = null;
-    if (contents.isContinuation) { // WatchContinuationContent
-      items = contents.items;
-    }
-    else { // WatchContent
-      items = contents.playlist?.items;
-    }
-    if (items) {
-      const continueFromVideoId = autoplayContext.fetchEndpoint.payload.videoId;
-      let currentIndex = 0;
-      if (continueFromVideoId) {
-        currentIndex = items?.findIndex((item) => item.videoId === continueFromVideoId) || 0;
+
+    if (contents) {
+      let items;
+      if (contents.isContinuation) { // WatchContinuationContent
+        items = contents.items;
       }
-      if (currentIndex < 0) {
-        currentIndex = 0;
+      else { // WatchContent
+        items = contents.playlist?.items;
       }
-      const itemsAfter = items?.slice(currentIndex + 1).filter((item) => item.type === 'video' || item.type === 'song') || [];
-      autoplayItems.push(...itemsAfter);
-      ytmusic.getLogger().info(`[ytmusic-play] Obtained ${itemsAfter.length} items for autoplay from current playlist`);
-      if (itemsAfter.length > 0) {
-        newAutoplayContext = AutoplayHelper.getAutoplayContext(contents);
+      if (items) {
+        const continueFromVideoId = autoplayContext?.fetchEndpoint.payload.videoId;
+        let currentIndex = 0;
+        if (continueFromVideoId) {
+          currentIndex = items?.findIndex((item) => item.videoId === continueFromVideoId) || 0;
+        }
+        if (currentIndex < 0) {
+          currentIndex = 0;
+        }
+        const itemsAfter = items?.slice(currentIndex + 1).filter((item) => item.type === 'video' || item.type === 'song') || [];
+        autoplayItems.push(...itemsAfter);
+        ytmusic.getLogger().info(`[ytmusic-play] Obtained ${itemsAfter.length} items for autoplay from current playlist`);
+        if (itemsAfter.length > 0) {
+          newAutoplayContext = AutoplayHelper.getAutoplayContext(contents);
+        }
+      }
+
+      if (autoplayItems.length <= 5 && !contents.isContinuation && contents.automix) {
+        const automixContents = await endpointModel.getContents(contents.automix.endpoint);
+        const items = automixContents?.playlist?.items;
+        if (items) {
+          autoplayItems.push(...items);
+          ytmusic.getLogger().info(`[ytmusic-play] Obtained ${items.length} items for autoplay from automix`);
+          if (items.length > 0) {
+            newAutoplayContext = AutoplayHelper.getAutoplayContext(automixContents);
+          }
+        }
       }
     }
 
-    if (autoplayItems.length <= 5 && !contents.isContinuation && contents.automix) {
-      const automixContents = await endpointModel.getContents(contents.automix.endpoint);
-      const items = automixContents?.playlist?.items;
-      if (items) {
-        autoplayItems.push(...items);
-        ytmusic.getLogger().info(`[ytmusic-play] Obtained ${items.length} items for autoplay from automix`);
-        if (items.length > 0) {
-          newAutoplayContext = AutoplayHelper.getAutoplayContext(automixContents);
+    if (autoplayItems.length === 0) {
+      // Fetch from radio endpoint as last resort.
+      const playbackInfo = await this.#getPlaybackInfoFromUri(this.#lastPlaybackInfo.track.uri);
+      const radioEndpoint = playbackInfo.info?.radioEndpoint;
+      if (radioEndpoint && (!autoplayContext || radioEndpoint.payload.playlistId !== autoplayContext.fetchEndpoint.payload.playlistId)) {
+        const radioContents = await endpointModel.getContents(radioEndpoint);
+        const items = radioContents?.playlist?.items;
+        if (items) {
+          const currentIndex = items.findIndex((item) => item.videoId === playbackInfo.videoId) || 0;
+          const itemsAfter = items.slice(currentIndex + 1).filter((item) => item.type === 'video' || item.type === 'song') || [];
+          autoplayItems.push(...itemsAfter);
+          ytmusic.getLogger().info(`[ytmusic-play] Obtained ${itemsAfter.length} items for autoplay from radio`);
+          if (items.length > 0) {
+            newAutoplayContext = AutoplayHelper.getAutoplayContext(radioContents);
+          }
         }
       }
     }
