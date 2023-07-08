@@ -5,7 +5,6 @@ import libQ from 'kew';
 // @ts-ignore
 import vconf from 'v-conf';
 
-import Innertube from 'volumio-youtubei.js';
 import ytmusic from './lib/YTMusicContext';
 import BrowseController from './lib/controller/browse/BrowseController';
 import SearchController, { SearchQuery } from './lib/controller/search/SearchController';
@@ -200,17 +199,6 @@ class ControllerYTMusic {
     return libQ.resolve();
   }
 
-  #applyI18nConfigToInnertube = function () {
-    const innertube = ytmusic.get<Innertube>('innertube');
-    if (innertube) {
-      const region = ytmusic.getConfigValue('region');
-      const language = ytmusic.getConfigValue('language');
-
-      innertube.session.context.client.gl = region;
-      innertube.session.context.client.hl = language;
-    }
-  };
-
   getConfigurationFiles() {
     return [ 'config.json' ];
   }
@@ -280,7 +268,7 @@ class ControllerYTMusic {
       ytmusic.setConfigValue('region', region);
       ytmusic.setConfigValue('language', language);
 
-      this.#applyI18nConfigToInnertube();
+      InnertubeLoader.applyI18nConfig();
       Model.getInstance(ModelType.Config).clearCache();
       ytmusic.refreshUIConfig();
     }

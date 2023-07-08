@@ -36,7 +36,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _ControllerYTMusic_instances, _ControllerYTMusic_context, _ControllerYTMusic_config, _ControllerYTMusic_commandRouter, _ControllerYTMusic_browseController, _ControllerYTMusic_searchController, _ControllerYTMusic_playController, _ControllerYTMusic_applyI18nConfigToInnertube, _ControllerYTMusic_getConfigI18nOptions, _ControllerYTMusic_getConfigAccountInfo, _ControllerYTMusic_getAuthStatus, _ControllerYTMusic_addToBrowseSources;
+var _ControllerYTMusic_instances, _ControllerYTMusic_context, _ControllerYTMusic_config, _ControllerYTMusic_commandRouter, _ControllerYTMusic_browseController, _ControllerYTMusic_searchController, _ControllerYTMusic_playController, _ControllerYTMusic_getConfigI18nOptions, _ControllerYTMusic_getConfigAccountInfo, _ControllerYTMusic_getAuthStatus, _ControllerYTMusic_addToBrowseSources;
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 const kew_1 = __importDefault(require("kew"));
@@ -61,15 +61,6 @@ class ControllerYTMusic {
         _ControllerYTMusic_browseController.set(this, void 0);
         _ControllerYTMusic_searchController.set(this, void 0);
         _ControllerYTMusic_playController.set(this, void 0);
-        _ControllerYTMusic_applyI18nConfigToInnertube.set(this, function () {
-            const innertube = YTMusicContext_1.default.get('innertube');
-            if (innertube) {
-                const region = YTMusicContext_1.default.getConfigValue('region');
-                const language = YTMusicContext_1.default.getConfigValue('language');
-                innertube.session.context.client.gl = region;
-                innertube.session.context.client.hl = language;
-            }
-        });
         __classPrivateFieldSet(this, _ControllerYTMusic_context, context, "f");
         __classPrivateFieldSet(this, _ControllerYTMusic_commandRouter, context.coreCommand, "f");
     }
@@ -223,7 +214,7 @@ class ControllerYTMusic {
         if (oldRegion !== region || oldLanguage !== language) {
             YTMusicContext_1.default.setConfigValue('region', region);
             YTMusicContext_1.default.setConfigValue('language', language);
-            __classPrivateFieldGet(this, _ControllerYTMusic_applyI18nConfigToInnertube, "f").call(this);
+            InnertubeLoader_1.default.applyI18nConfig();
             model_1.default.getInstance(model_1.ModelType.Config).clearCache();
             YTMusicContext_1.default.refreshUIConfig();
         }
@@ -348,7 +339,7 @@ class ControllerYTMusic {
         return defer.promise;
     }
 }
-_ControllerYTMusic_context = new WeakMap(), _ControllerYTMusic_config = new WeakMap(), _ControllerYTMusic_commandRouter = new WeakMap(), _ControllerYTMusic_browseController = new WeakMap(), _ControllerYTMusic_searchController = new WeakMap(), _ControllerYTMusic_playController = new WeakMap(), _ControllerYTMusic_applyI18nConfigToInnertube = new WeakMap(), _ControllerYTMusic_instances = new WeakSet(), _ControllerYTMusic_getConfigI18nOptions = function _ControllerYTMusic_getConfigI18nOptions() {
+_ControllerYTMusic_context = new WeakMap(), _ControllerYTMusic_config = new WeakMap(), _ControllerYTMusic_commandRouter = new WeakMap(), _ControllerYTMusic_browseController = new WeakMap(), _ControllerYTMusic_searchController = new WeakMap(), _ControllerYTMusic_playController = new WeakMap(), _ControllerYTMusic_instances = new WeakSet(), _ControllerYTMusic_getConfigI18nOptions = function _ControllerYTMusic_getConfigI18nOptions() {
     const defer = kew_1.default.defer();
     const model = model_1.default.getInstance(model_1.ModelType.Config);
     model.getI18nOptions().then((options) => {
