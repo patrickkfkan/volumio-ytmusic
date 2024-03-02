@@ -492,15 +492,15 @@ export default class PlayController {
 }
 
 /**
- * Given state is updated by calling `setConsumeUpdateService('mpd', true)` (`consumeIgnoreMetadata`: true), when moving to 
+ * Given state is updated by calling `setConsumeUpdateService('mpd', true)` (`consumeIgnoreMetadata`: true), when moving to
  * prefetched track there's no guarantee the state machine will store the correct consume state obtained from MPD. It depends on
  * whether the state machine increments `currentPosition` before or after MPD calls `pushState()`. The intended
  * order is 'before' - but because the increment is triggered through a timer, it is possible that MPD calls `pushState()` first,
  * thereby causing the state machine to store the wrong state info (title, artist, album...obtained from trackBlock at
  * `currentPosition` which has not yet been incremented).
- * 
+ *
  * See state machine `syncState()` and  `increasePlaybackTimer()`.
- * 
+ *
  * `PrefetchPlaybackStateFixer` checks whether the state is consistent when prefetched track is played and `currentPosition` updated
  * and triggers an MPD `pushState()` if necessary.
  */
