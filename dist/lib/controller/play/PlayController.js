@@ -49,6 +49,7 @@ const ViewHelper_1 = __importDefault(require("../browse/view-handlers/ViewHelper
 const ExplodeHelper_1 = __importDefault(require("../../util/ExplodeHelper"));
 const AutoplayHelper_1 = __importDefault(require("../../util/AutoplayHelper"));
 const EndpointHelper_1 = __importDefault(require("../../util/EndpointHelper"));
+const events_1 = __importDefault(require("events"));
 class PlayController {
     constructor() {
         _PlayController_instances.add(this);
@@ -59,6 +60,9 @@ class PlayController {
         __classPrivateFieldSet(this, _PlayController_mpdPlugin, YTMusicContext_1.default.getMpdPlugin(), "f");
         __classPrivateFieldSet(this, _PlayController_autoplayListener, null, "f");
         __classPrivateFieldSet(this, _PlayController_prefetchPlaybackStateFixer, new PrefetchPlaybackStateFixer(), "f");
+        __classPrivateFieldGet(this, _PlayController_prefetchPlaybackStateFixer, "f").on('playPrefetch', (info) => {
+            __classPrivateFieldSet(this, _PlayController_lastPlaybackInfo, info, "f");
+        });
     }
     reset() {
         __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_removeAutoplayListener).call(this);
@@ -72,7 +76,7 @@ class PlayController {
      */
     async clearAddPlayTrack(track) {
         YTMusicContext_1.default.getLogger().info(`[ytmusic-play] clearAddPlayTrack: ${track.uri}`);
-        __classPrivateFieldGet(this, _PlayController_prefetchPlaybackStateFixer, "f")?.reset();
+        __classPrivateFieldGet(this, _PlayController_prefetchPlaybackStateFixer, "f")?.notifyPrefetchCleared();
         const { videoId, info: playbackInfo } = await __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_getPlaybackInfoFromUri).call(this, track.uri);
         if (!playbackInfo) {
             throw Error(`Could not obtain playback info for: ${videoId})`);
@@ -160,7 +164,6 @@ class PlayController {
         }
         let streamUrl;
         try {
-            console.log('ytmusic prefetch: ', track.uri);
             const { videoId, info: playbackInfo } = await __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_getPlaybackInfoFromUri).call(this, track.uri);
             streamUrl = playbackInfo?.stream?.url;
             if (!streamUrl || !playbackInfo) {
@@ -252,7 +255,6 @@ _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = ne
     if (playbackInfo.stream?.bitrate) {
         track.samplerate = playbackInfo.stream.bitrate;
     }
-    console.log('#updateTrackWithPlaybackInfo:', JSON.stringify(track, null, 2));
     return track;
 }, _PlayController_getExplodedTrackInfoFromUri = function _PlayController_getExplodedTrackInfoFromUri(uri) {
     if (!uri) {
@@ -436,8 +438,22 @@ _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = ne
         .map((item) => ExplodeHelper_1.default.getExplodedTrackInfoFromMusicItem(item))
         .map((item) => ExplodeHelper_1.default.createQueueItemFromExplodedTrackInfo(item));
 };
-class PrefetchPlaybackStateFixer {
+/**
+ * Given state is updated by calling `setConsumeUpdateService('mpd', true)` (`consumeIgnoreMetadata`: true), when moving to
+ * prefetched track there's no guarantee the state machine will store the correct consume state obtained from MPD. It depends on
+ * whether the state machine increments `currentPosition` before or after MPD calls `pushState()`. The intended
+ * order is 'before' - but because the increment is triggered through a timer, it is possible that MPD calls `pushState()` first,
+ * thereby causing the state machine to store the wrong state info (title, artist, album...obtained from trackBlock at
+ * `currentPosition` which has not yet been incremented).
+ *
+ * See state machine `syncState()` and  `increasePlaybackTimer()`.
+ *
+ * `PrefetchPlaybackStateFixer` checks whether the state is consistent when prefetched track is played and `currentPosition` updated
+ * and triggers an MPD `pushState()` if necessary.
+ */
+class PrefetchPlaybackStateFixer extends events_1.default {
     constructor() {
+        super();
         _PrefetchPlaybackStateFixer_instances.add(this);
         _PrefetchPlaybackStateFixer_positionAtPrefetch.set(this, void 0);
         _PrefetchPlaybackStateFixer_prefetchedTrack.set(this, void 0);
@@ -447,11 +463,22 @@ class PrefetchPlaybackStateFixer {
     }
     reset() {
         __classPrivateFieldGet(this, _PrefetchPlaybackStateFixer_instances, "m", _PrefetchPlaybackStateFixer_removePushStateListener).call(this);
+        this.removeAllListeners();
     }
     notifyPrefetched(track) {
         __classPrivateFieldSet(this, _PrefetchPlaybackStateFixer_positionAtPrefetch, YTMusicContext_1.default.getStateMachine().currentPosition, "f");
         __classPrivateFieldSet(this, _PrefetchPlaybackStateFixer_prefetchedTrack, track, "f");
         __classPrivateFieldGet(this, _PrefetchPlaybackStateFixer_instances, "m", _PrefetchPlaybackStateFixer_addPushStateListener).call(this);
+    }
+    notifyPrefetchCleared() {
+        __classPrivateFieldGet(this, _PrefetchPlaybackStateFixer_instances, "m", _PrefetchPlaybackStateFixer_removePushStateListener).call(this);
+    }
+    emit(event, ...args) {
+        return super.emit(event, ...args);
+    }
+    on(event, listener) {
+        super.on(event, listener);
+        return this;
     }
 }
 _PrefetchPlaybackStateFixer_positionAtPrefetch = new WeakMap(), _PrefetchPlaybackStateFixer_prefetchedTrack = new WeakMap(), _PrefetchPlaybackStateFixer_volumioPushStateListener = new WeakMap(), _PrefetchPlaybackStateFixer_instances = new WeakSet(), _PrefetchPlaybackStateFixer_addPushStateListener = function _PrefetchPlaybackStateFixer_addPushStateListener() {
@@ -481,15 +508,15 @@ _PrefetchPlaybackStateFixer_positionAtPrefetch = new WeakMap(), _PrefetchPlaybac
         const track = sm.getTrack(currentPosition);
         const pf = __classPrivateFieldGet(this, _PrefetchPlaybackStateFixer_prefetchedTrack, "f");
         __classPrivateFieldGet(this, _PrefetchPlaybackStateFixer_instances, "m", _PrefetchPlaybackStateFixer_removePushStateListener).call(this);
-        if (track && state && pf && track.service === 'ytmusic' && state.uri !== track.uri && pf.uri === track.uri) {
-            console.log('URI of current playback state is different from URI of actual track. Force state update.');
-            console.log('state.uri:', state?.uri);
-            console.log('track.uri:', track.uri);
-            const mpdPlugin = YTMusicContext_1.default.getMpdPlugin();
-            mpdPlugin.getState().then((st) => mpdPlugin.pushState(st));
-        }
-        else {
-            console.log('different service or state consistent');
+        if (track && state && pf && track.service === 'ytmusic' && pf.uri === track.uri) {
+            if (state.uri !== track.uri) {
+                const mpdPlugin = YTMusicContext_1.default.getMpdPlugin();
+                mpdPlugin.getState().then((st) => mpdPlugin.pushState(st));
+            }
+            this.emit('playPrefetch', {
+                track: pf,
+                position: currentPosition
+            });
         }
     }
 };

@@ -18,6 +18,7 @@ import AutoplayContext from '../../types/AutoplayContext';
 import { AlbumView } from '../browse/view-handlers/AlbumViewHandler';
 import { GenericView } from '../browse/view-handlers/GenericViewHandler';
 import EndpointHelper from '../../util/EndpointHelper';
+import EventEmitter from 'events';
 
 interface MpdState {
   status: 'play' | 'stop' | 'pause';
@@ -39,6 +40,9 @@ export default class PlayController {
     this.#mpdPlugin = ytmusic.getMpdPlugin();
     this.#autoplayListener = null;
     this.#prefetchPlaybackStateFixer = new PrefetchPlaybackStateFixer();
+    this.#prefetchPlaybackStateFixer.on('playPrefetch', (info: { track: QueueItem; position: number; }) => {
+      this.#lastPlaybackInfo = info;
+    });
   }
 
   reset() {
@@ -76,7 +80,7 @@ export default class PlayController {
   async clearAddPlayTrack(track: QueueItem) {
     ytmusic.getLogger().info(`[ytmusic-play] clearAddPlayTrack: ${track.uri}`);
 
-    this.#prefetchPlaybackStateFixer?.reset();
+    this.#prefetchPlaybackStateFixer?.notifyPrefetchCleared();
 
     const {videoId, info: playbackInfo} = await this.#getPlaybackInfoFromUri(track.uri);
 
@@ -500,25 +504,31 @@ export default class PlayController {
  * `PrefetchPlaybackStateFixer` checks whether the state is consistent when prefetched track is played and `currentPosition` updated
  * and triggers an MPD `pushState()` if necessary.
  */
-class PrefetchPlaybackStateFixer {
+class PrefetchPlaybackStateFixer extends EventEmitter {
 
   #positionAtPrefetch: number;
   #prefetchedTrack: QueueItem | null;
   #volumioPushStateListener: ((state: any) => void) | null;
 
   constructor() {
+    super();
     this.#positionAtPrefetch = -1;
     this.#prefetchedTrack = null;
   }
 
   reset() {
     this.#removePushStateListener();
+    this.removeAllListeners();
   }
 
   notifyPrefetched(track: QueueItem) {
     this.#positionAtPrefetch = ytmusic.getStateMachine().currentPosition;
     this.#prefetchedTrack = track;
     this.#addPushStateListener();
+  }
+
+  notifyPrefetchCleared() {
+    this.#removePushStateListener();
   }
 
   #addPushStateListener() {
@@ -543,7 +553,7 @@ class PrefetchPlaybackStateFixer {
 
   #handleVolumioPushState(state: any) {
     const sm = ytmusic.getStateMachine();
-    const currentPosition = sm.currentPosition;
+    const currentPosition = sm.currentPosition as number;
     if (sm.getState().service !== 'ytmusic') {
       this.#removePushStateListener();
       return;
@@ -552,10 +562,27 @@ class PrefetchPlaybackStateFixer {
       const track = sm.getTrack(currentPosition);
       const pf = this.#prefetchedTrack;
       this.#removePushStateListener();
-      if (track && state && pf && track.service === 'ytmusic' && state.uri !== track.uri && pf.uri === track.uri) {
-        const mpdPlugin = ytmusic.getMpdPlugin();
-        mpdPlugin.getState().then((st: any) => mpdPlugin.pushState(st));
+      if (track && state && pf && track.service === 'ytmusic' && pf.uri === track.uri) {
+        if (state.uri !== track.uri) {
+          const mpdPlugin = ytmusic.getMpdPlugin();
+          mpdPlugin.getState().then((st: any) => mpdPlugin.pushState(st));
+        }
+        this.emit('playPrefetch', {
+          track: pf,
+          position: currentPosition
+        });
       }
     }
+  }
+
+  emit(event: 'playPrefetch', info: { track: QueueItem; position: number; }): boolean;
+  emit(event: string | symbol, ...args: any[]): boolean {
+    return super.emit(event, ...args);
+  }
+
+  on(event: 'playPrefetch', listener: (info: { track: QueueItem; position: number; }) => void): this;
+  on(event: string | symbol, listener: (...args: any[]) => void): this {
+    super.on(event, listener);
+    return this;
   }
 }
