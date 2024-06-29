@@ -16,6 +16,7 @@ import { Account, I18nOptionValue, I18nOptions } from './lib/types/PluginConfig'
 import { QueueItem } from './lib/controller/browse/view-handlers/ExplodableViewHandler';
 import ViewHelper from './lib/controller/browse/view-handlers/ViewHelper';
 import InnertubeLoader from './lib/model/InnertubeLoader';
+import NowPlayingPluginMetadataProvider from './lib/util/NowPlayingPluginMetadataProvider';
 
 interface GotoParams extends QueueItem {
   type: 'album' | 'artist';
@@ -29,6 +30,8 @@ class ControllerYTMusic {
   #browseController: BrowseController | null;
   #searchController: SearchController | null;
   #playController: PlayController | null;
+
+  #nowPlayingPluginMetadataProvider: NowPlayingPluginMetadataProvider | null;
 
   constructor(context: any) {
     this.#context = context;
@@ -181,6 +184,8 @@ class ControllerYTMusic {
     this.#searchController = new SearchController();
     this.#playController = new PlayController();
 
+    this.#nowPlayingPluginMetadataProvider = new NowPlayingPluginMetadataProvider();
+
     this.#addToBrowseSources();
 
     return libQ.resolve();
@@ -194,6 +199,8 @@ class ControllerYTMusic {
     this.#browseController = null;
     this.#searchController = null;
     this.#playController = null;
+
+    this.#nowPlayingPluginMetadataProvider = null;
 
     InnertubeLoader.reset();
     ytmusic.reset();
@@ -426,6 +433,10 @@ class ControllerYTMusic {
     });
 
     return defer.promise;
+  }
+
+  getNowPlayingPluginMetadataProvider() {
+    return this.#nowPlayingPluginMetadataProvider;
   }
 }
 
