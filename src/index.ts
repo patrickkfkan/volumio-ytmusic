@@ -16,13 +16,14 @@ import { Account, I18nOptionValue, I18nOptions } from './lib/types/PluginConfig'
 import { QueueItem } from './lib/controller/browse/view-handlers/ExplodableViewHandler';
 import ViewHelper from './lib/controller/browse/view-handlers/ViewHelper';
 import InnertubeLoader from './lib/model/InnertubeLoader';
-import NowPlayingPluginMetadataProvider from './lib/util/NowPlayingPluginMetadataProvider';
+import YTMusicNowPlayingMetadataProvider from './lib/util/YTMusicNowPlayingMetadataProvider';
+import { NowPlayingPluginSupport } from 'now-playing-common';
 
 interface GotoParams extends QueueItem {
   type: 'album' | 'artist';
 }
 
-class ControllerYTMusic {
+class ControllerYTMusic implements NowPlayingPluginSupport {
   #context: any;
   #config: any;
   #commandRouter: any;
@@ -31,7 +32,7 @@ class ControllerYTMusic {
   #searchController: SearchController | null;
   #playController: PlayController | null;
 
-  #nowPlayingPluginMetadataProvider: NowPlayingPluginMetadataProvider | null;
+  #nowPlayingMetadataProvider: YTMusicNowPlayingMetadataProvider | null;
 
   constructor(context: any) {
     this.#context = context;
@@ -184,7 +185,7 @@ class ControllerYTMusic {
     this.#searchController = new SearchController();
     this.#playController = new PlayController();
 
-    this.#nowPlayingPluginMetadataProvider = new NowPlayingPluginMetadataProvider();
+    this.#nowPlayingMetadataProvider = new YTMusicNowPlayingMetadataProvider();
 
     this.#addToBrowseSources();
 
@@ -200,7 +201,7 @@ class ControllerYTMusic {
     this.#searchController = null;
     this.#playController = null;
 
-    this.#nowPlayingPluginMetadataProvider = null;
+    this.#nowPlayingMetadataProvider = null;
 
     InnertubeLoader.reset();
     ytmusic.reset();
@@ -435,8 +436,8 @@ class ControllerYTMusic {
     return defer.promise;
   }
 
-  getNowPlayingPluginMetadataProvider() {
-    return this.#nowPlayingPluginMetadataProvider;
+  getNowPlayingMetadataProvider() {
+    return this.#nowPlayingMetadataProvider;
   }
 }
 

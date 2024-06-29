@@ -7,7 +7,7 @@ import { BrowseEndpoint, EndpointType } from '../types/Endpoint';
 import { AlbumView } from '../controller/browse/view-handlers/AlbumViewHandler';
 import { PageElement } from '../types';
 
-export default class NowPlayingPluginMetadataProvider implements NowPlayingMetadataProvider {
+export default class YTMusicNowPlayingMetadataProvider implements NowPlayingMetadataProvider {
 
   version: '1.0.0';
 

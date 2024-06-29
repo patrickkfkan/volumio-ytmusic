@@ -31,7 +31,7 @@ const ViewHelper_1 = __importDefault(require("../controller/browse/view-handlers
 const YTMusicContext_1 = __importDefault(require("../YTMusicContext"));
 const PlayController_1 = __importDefault(require("../controller/play/PlayController"));
 const Endpoint_1 = require("../types/Endpoint");
-class NowPlayingPluginMetadataProvider {
+class YTMusicNowPlayingMetadataProvider {
     constructor() {
         this.version = '1.0.0';
     }
@@ -152,5 +152,5 @@ class NowPlayingPluginMetadataProvider {
         return artist;
     }
 }
-exports.default = NowPlayingPluginMetadataProvider;
-//# sourceMappingURL=NowPlayingPluginMetadataProvider.js.map
+exports.default = YTMusicNowPlayingMetadataProvider;
+//# sourceMappingURL=YTMusicNowPlayingMetadataProvider.js.map

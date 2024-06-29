@@ -1,5 +1,5 @@
 import { MetadataAlbumInfo, MetadataArtistInfo, MetadataSongInfo, NowPlayingMetadataProvider } from 'now-playing-common';
-export default class NowPlayingPluginMetadataProvider implements NowPlayingMetadataProvider {
+export default class YTMusicNowPlayingMetadataProvider implements NowPlayingMetadataProvider {
     version: '1.0.0';
     constructor();
     getSongInfo(songTitle: string, albumTitle?: string, artistName?: string, uri?: string): Promise<MetadataSongInfo | null>;
@@ -10,4 +10,4 @@ export default class NowPlayingPluginMetadataProvider implements NowPlayingMetad
         channelId: string;
     }): Promise<MetadataArtistInfo | null>;
 }
-//# sourceMappingURL=NowPlayingPluginMetadataProvider.d.ts.map
+//# sourceMappingURL=YTMusicNowPlayingMetadataProvider.d.ts.map
