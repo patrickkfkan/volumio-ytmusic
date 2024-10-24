@@ -67,12 +67,17 @@ class Auth extends events_1.default {
                 YTMusicContext_1.default.set('authStatusInfo', {
                     status: AuthStatus.SigningIn
                 });
+                YTMusicContext_1.default.getLogger().info('[ytmusic] Attempt sign-in with existing credentials');
             }
             else {
                 YTMusicContext_1.default.set('authStatusInfo', INITIAL_SIGNED_OUT_STATUS);
+                YTMusicContext_1.default.getLogger().info('[ytmusic] Obtaining device code for sign-in...');
             }
             YTMusicContext_1.default.refreshUIConfig();
-            void __classPrivateFieldGet(this, _Auth_innertube, "f").session.signIn(credentials);
+            __classPrivateFieldGet(this, _Auth_innertube, "f").session.signIn(credentials)
+                .catch((error) => {
+                YTMusicContext_1.default.getLogger().error(YTMusicContext_1.default.getErrorMessage('[ytmusic] Caught Innertube sign-in error:', error, false));
+            });
         }
     }
     async signOut() {
@@ -97,6 +102,7 @@ _Auth_innertube = new WeakMap(), _Auth_handlers = new WeakMap(), _Auth_instances
             userCode: data.user_code
         }
     });
+    YTMusicContext_1.default.getLogger().info(`[ytmusic] Obtained device code for sign-in (expires in ${data.expires_in} seconds)`);
     YTMusicContext_1.default.refreshUIConfig();
     this.emit(AuthEvent.Pending);
 }, _Auth_handleSuccess = function _Auth_handleSuccess(data) {
@@ -115,16 +121,16 @@ _Auth_innertube = new WeakMap(), _Auth_handlers = new WeakMap(), _Auth_instances
         YTMusicContext_1.default.getLogger().info('[ytmusic] Auth credentials updated');
     }
 }, _Auth_handleError = function _Auth_handleError(err) {
-    if (err.info.status === 'DEVICE_CODE_EXPIRED') {
-        YTMusicContext_1.default.set('authStatusInfo', INITIAL_SIGNED_OUT_STATUS);
+    if (err.info.error === 'expired_token') {
+        YTMusicContext_1.default.getLogger().info('[ytmusic] Device code for sign-in expired - refetch');
+        this.signIn(); // This will refetch the code and refresh UI config
+        return;
     }
-    else {
-        YTMusicContext_1.default.set('authStatusInfo', {
-            status: AuthStatus.Error,
-            error: err
-        });
-        YTMusicContext_1.default.toast('error', YTMusicContext_1.default.getI18n('YTMUSIC_ERR_SIGN_IN', YTMusicContext_1.default.getErrorMessage('', err, false)));
-    }
+    YTMusicContext_1.default.set('authStatusInfo', {
+        status: AuthStatus.Error,
+        error: err
+    });
+    YTMusicContext_1.default.toast('error', YTMusicContext_1.default.getI18n('YTMUSIC_ERR_SIGN_IN', YTMusicContext_1.default.getErrorMessage('', err, false)));
     YTMusicContext_1.default.refreshUIConfig();
     this.emit(AuthEvent.Error);
 }, _Auth_registerHandlers = function _Auth_registerHandlers() {

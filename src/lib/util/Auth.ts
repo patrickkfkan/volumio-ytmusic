@@ -67,7 +67,7 @@ export default class Auth extends EventEmitter {
         userCode: data.user_code
       }
     });
-
+    ytmusic.getLogger().info(`[ytmusic] Obtained device code for sign-in (expires in ${data.expires_in} seconds)`);
     ytmusic.refreshUIConfig();
     this.emit(AuthEvent.Pending);
   }
@@ -90,19 +90,16 @@ export default class Auth extends EventEmitter {
   }
 
   #handleError(err: YTUtils.OAuth2Error) {
-    if (err.info.status === 'DEVICE_CODE_EXPIRED') {
-      ytmusic.set('authStatusInfo', INITIAL_SIGNED_OUT_STATUS);
+    if (err.info.error === 'expired_token') {
+      ytmusic.getLogger().info('[ytmusic] Device code for sign-in expired - refetch');
+      this.signIn(); // This will refetch the code and refresh UI config
+      return;
     }
-    else {
-      ytmusic.set<AuthStatusInfo>('authStatusInfo', {
-        status: AuthStatus.Error,
-        error: err
-      });
-
-      ytmusic.toast('error', ytmusic.getI18n('YTMUSIC_ERR_SIGN_IN',
-        ytmusic.getErrorMessage('', err, false)));
-    }
-
+    ytmusic.set<AuthStatusInfo>('authStatusInfo', {
+      status: AuthStatus.Error,
+      error: err
+    });
+    ytmusic.toast('error', ytmusic.getI18n('YTMUSIC_ERR_SIGN_IN', ytmusic.getErrorMessage('', err, false)));
     ytmusic.refreshUIConfig();
     this.emit(AuthEvent.Error);
   }
@@ -132,13 +129,18 @@ export default class Auth extends EventEmitter {
         ytmusic.set<AuthStatusInfo>('authStatusInfo', {
           status: AuthStatus.SigningIn
         });
+        ytmusic.getLogger().info('[ytmusic] Attempt sign-in with existing credentials');
       }
       else {
         ytmusic.set('authStatusInfo', INITIAL_SIGNED_OUT_STATUS);
+        ytmusic.getLogger().info('[ytmusic] Obtaining device code for sign-in...');
       }
 
       ytmusic.refreshUIConfig();
-      void this.#innertube.session.signIn(credentials);
+      this.#innertube.session.signIn(credentials)
+      .catch((error: unknown) => {
+        ytmusic.getLogger().error(ytmusic.getErrorMessage('[ytmusic] Caught Innertube sign-in error:', error, false));
+      });
     }
   }
 
