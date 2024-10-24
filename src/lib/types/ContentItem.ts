@@ -1,5 +1,5 @@
-import AutoplayContext from './AutoplayContext';
-import { BrowseContinuationEndpoint, BrowseEndpoint, SearchContinuationEndpoint, SearchEndpoint, WatchEndpoint } from './Endpoint';
+import type AutoplayContext from './AutoplayContext';
+import { type BrowseContinuationEndpoint, type BrowseEndpoint, type SearchContinuationEndpoint, type SearchEndpoint, type WatchEndpoint } from './Endpoint';
 
 export interface MusicItem {
   type: 'video' | 'song';

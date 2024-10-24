@@ -1,12 +1,14 @@
-import ytmusic, { I18nKey } from '../YTMusicContext';
-import { IBrowseResponse, INextResponse, ISearchResponse, YTNodes, Misc as YTMisc, Helpers as YTHelpers, IParsedResponse, PlaylistPanelContinuation, GridContinuation, MusicShelfContinuation, MusicPlaylistShelfContinuation, SectionListContinuation } from 'volumio-youtubei.js';
-import Endpoint, { BrowseContinuationEndpoint, BrowseEndpoint, EndpointOf, EndpointType, SearchEndpoint, WatchContinuationEndpoint, WatchEndpoint } from '../types/Endpoint';
-import { ContentItem, PageElement } from '../types';
-import { SectionItem } from '../types/PageElement';
+import ytmusic, { type I18nKey } from '../YTMusicContext';
+import { type IBrowseResponse, type INextResponse, type ISearchResponse, YTNodes, Misc as YTMisc, type Helpers as YTHelpers, type IParsedResponse, PlaylistPanelContinuation, GridContinuation, MusicShelfContinuation, MusicPlaylistShelfContinuation, SectionListContinuation } from 'volumio-youtubei.js';
+import {type BrowseContinuationEndpoint, type BrowseEndpoint, type EndpointOf, type SearchEndpoint, type WatchContinuationEndpoint, type WatchEndpoint} from '../types/Endpoint';
+import type Endpoint from '../types/Endpoint';
+import { EndpointType } from '../types/Endpoint';
+import { type ContentItem, type PageElement } from '../types';
+import { type SectionItem } from '../types/PageElement';
 import EndpointHelper from '../util/EndpointHelper';
-import { ContentOf, PageContent, WatchContent, WatchContinuationContent } from '../types/Content';
-import { TextRun } from 'volumio-youtubei.js/dist/src/parser/misc';
-import { MetadataLyrics, MetadataSyncedLyrics } from 'now-playing-common';
+import { type ContentOf, type PageContent, type WatchContent, type WatchContinuationContent } from '../types/Content';
+import { type TextRun } from 'volumio-youtubei.js/dist/src/parser/misc';
+import { type MetadataLyrics, type MetadataSyncedLyrics } from 'now-playing-common';
 
 type ParseableInnertubeResponse = INextResponse | ISearchResponse | IBrowseResponse | IParsedResponse;
 
@@ -352,13 +354,13 @@ export default class InnertubeResultParser {
       const mdhMenu = this.unwrap(data.menu);
       if (mdhMenu instanceof YTNodes.Menu) {
         const mdhTopLevelButtons = mdhMenu.top_level_buttons.filter(
-          (button) => button instanceof YTNodes.Button) as YTNodes.Button[];
+          (button) => button instanceof YTNodes.Button);
         for (const button of mdhTopLevelButtons) {
           // We determine the header type here:
           // - Album has Play button in top level buttons
           // - Playlist has Shuffle Play button
           switch (button.icon_type) {
-            case 'MUSIC_SHUFFLE':
+            case 'MUSIC_SHUFFLE': {
               const mdhShufflePlayEndpoint = this.parseEndpoint(button.endpoint, EndpointType.Watch);
               const mdhShufflePlayText = this.unwrap(button.text);
               if (mdhShufflePlayEndpoint && mdhShufflePlayText) {
@@ -380,7 +382,7 @@ export default class InnertubeResultParser {
                 }
               }
               break;
-
+            }
             case 'PLAY_ARROW':
               type = 'album';
               endpoint = this.parseEndpoint(button.endpoint, EndpointType.Watch);
@@ -427,7 +429,7 @@ export default class InnertubeResultParser {
       // Type
       type = EndpointHelper.isAlbumEndpoint(originatingEndpoint) ? 'album' : 'playlist';
       // Play endpoint
-      const playButton = data.buttons.find((button) => button instanceof YTNodes.MusicPlayButton) as YTNodes.MusicPlayButton | undefined;
+      const playButton = data.buttons.find((button) => button instanceof YTNodes.MusicPlayButton);
       if (playButton) {
         endpoint = this.parseEndpoint(playButton.endpoint, EndpointType.Watch);
       }
@@ -1484,16 +1486,16 @@ export default class InnertubeResultParser {
         return __checkType(__buildBrowseEndpoint());
 
       case '/search':
-      case 'search':
+      case 'search': {
         const searchEndpoint: SearchEndpoint = {
           type: EndpointType.Search,
           payload: __createPayload<SearchEndpoint>([ 'query', 'params' ])
         };
         return __checkType(searchEndpoint);
-
+      }
       case '/player':
       case 'next':
-      case '/next':
+      case '/next': {
         const watchEndpoint: WatchEndpoint = {
           type: EndpointType.Watch,
           payload: __createPayload<WatchEndpoint>([ 'videoId', 'playlistId', 'params', 'index', 'playlistSetVideoId' ])
@@ -1503,7 +1505,7 @@ export default class InnertubeResultParser {
           watchEndpoint.musicVideoType = musicVideoType;
         }
         return __checkType(watchEndpoint);
-
+      }
       default:
     }
 

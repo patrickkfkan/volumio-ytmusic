@@ -228,7 +228,7 @@ class ControllerYTMusic {
     async configSignOut() {
         if (InnertubeLoader_1.default.hasInstance()) {
             const { auth } = await InnertubeLoader_1.default.getInstance();
-            auth.signOut();
+            void auth.signOut();
         }
     }
     configSaveBrowse(data) {
@@ -340,6 +340,9 @@ class ControllerYTMusic {
                 YTMusicContext_1.default.toast('error', errMsg);
                 defer.reject(Error(errMsg));
             }
+        })
+            .catch((error) => {
+            YTMusicContext_1.default.getLogger().error(YTMusicContext_1.default.getErrorMessage('[ytmusic] Error obtaining goto URL:', error));
         });
         return defer.promise;
     }
@@ -350,20 +353,28 @@ class ControllerYTMusic {
 _ControllerYTMusic_context = new WeakMap(), _ControllerYTMusic_config = new WeakMap(), _ControllerYTMusic_commandRouter = new WeakMap(), _ControllerYTMusic_browseController = new WeakMap(), _ControllerYTMusic_searchController = new WeakMap(), _ControllerYTMusic_playController = new WeakMap(), _ControllerYTMusic_nowPlayingMetadataProvider = new WeakMap(), _ControllerYTMusic_instances = new WeakSet(), _ControllerYTMusic_getConfigI18nOptions = function _ControllerYTMusic_getConfigI18nOptions() {
     const defer = kew_1.default.defer();
     const model = model_1.default.getInstance(model_1.ModelType.Config);
+    const selected = {
+        region: { label: '', value: '' },
+        language: { label: '', value: '' }
+    };
     model.getI18nOptions().then((options) => {
         const selectedValues = {
             region: YTMusicContext_1.default.getConfigValue('region'),
             language: YTMusicContext_1.default.getConfigValue('language')
-        };
-        const selected = {
-            region: { label: '', value: '' },
-            language: { label: '', value: '' }
         };
         Object.keys(selected).forEach((key) => {
             selected[key] = options[key]?.optionValues.find((ov) => ov.value === selectedValues[key]) || { label: '', value: selectedValues[key] };
         });
         defer.resolve({
             options,
+            selected
+        });
+    })
+        .catch((error) => {
+        YTMusicContext_1.default.getLogger().error(YTMusicContext_1.default.getErrorMessage('[ytmusic] Error getting i18n options:', error));
+        YTMusicContext_1.default.toast('warning', 'Could not obtain i18n options');
+        defer.resolve({
+            options: model.getDefaultI18nOptions(),
             selected
         });
     });
@@ -375,7 +386,7 @@ _ControllerYTMusic_context = new WeakMap(), _ControllerYTMusic_config = new Weak
         defer.resolve(account);
     })
         .catch((error) => {
-        YTMusicContext_1.default.getLogger().warn(`Failed to get account config: ${error}`);
+        YTMusicContext_1.default.getLogger().warn(YTMusicContext_1.default.getErrorMessage('Failed to get account config:', error));
         defer.resolve(null);
     });
     return defer.promise;
@@ -385,7 +396,7 @@ _ControllerYTMusic_context = new WeakMap(), _ControllerYTMusic_config = new Weak
         defer.resolve(auth.getStatus());
     })
         .catch((error) => {
-        YTMusicContext_1.default.getLogger().warn(`Failed to get auth status: ${error}`);
+        YTMusicContext_1.default.getLogger().warn(YTMusicContext_1.default.getErrorMessage('Failed to get auth status:', error));
         defer.resolve(null);
     });
     return defer.promise;

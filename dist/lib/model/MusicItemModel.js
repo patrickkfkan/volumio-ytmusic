@@ -93,7 +93,6 @@ class MusicItemModel extends BaseModel_1.BaseModel {
         return InnertubeResultParser_1.default.parseLyrics(parsed);
     }
 }
-exports.default = MusicItemModel;
 _MusicItemModel_instances = new WeakSet(), _MusicItemModel_getTrackInfo = 
 // Based on Innertube.Music.#fetchInfoFromListItem(), which requires MusicTwoRowItem which we don't have.
 async function _MusicItemModel_getTrackInfo(innertube, endpoint) {
@@ -199,4 +198,5 @@ async function _MusicItemModel_getTrackInfo(innertube, endpoint) {
     }
     return lyricsId;
 };
+exports.default = MusicItemModel;
 //# sourceMappingURL=MusicItemModel.js.map

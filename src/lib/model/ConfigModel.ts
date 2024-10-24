@@ -1,6 +1,6 @@
 import { Misc as YTMisc } from 'volumio-youtubei.js';
 import ytmusic from '../YTMusicContext';
-import { I18nOptionValue, I18nOptions, PluginConfigSchema } from '../types/PluginConfig';
+import { type I18nOptionValue, type I18nOptions, type PluginConfigSchema } from '../types/PluginConfig';
 import { BaseModel } from './BaseModel';
 
 const CATEGORY_IDS: Record<string, string> = {
@@ -69,7 +69,7 @@ export default class ConfigModel extends BaseModel {
         return result;
       }, {});
 
-      const defaultI18nOptions = this.#getDefaultI18nOptions();
+      const defaultI18nOptions = this.getDefaultI18nOptions();
       const result: I18nOptions = {
         region: tmpResult.region || defaultI18nOptions.region,
         language: tmpResult.language || defaultI18nOptions.language
@@ -81,7 +81,7 @@ export default class ConfigModel extends BaseModel {
       return result;
     }
 
-    return { ...this.#getDefaultI18nOptions() };
+    return { ...this.getDefaultI18nOptions() };
   }
 
   clearCache() {
@@ -120,7 +120,7 @@ export default class ConfigModel extends BaseModel {
     return null;
   }
 
-  #getDefaultI18nOptions(): I18nOptions {
+  getDefaultI18nOptions(): I18nOptions {
     return {
       region: {
         label: ytmusic.getI18n('YTMUSIC_REGION'),

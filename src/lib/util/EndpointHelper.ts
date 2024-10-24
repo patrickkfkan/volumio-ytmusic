@@ -1,4 +1,6 @@
-import Endpoint, { BrowseEndpoint, EndpointOf, EndpointType } from '../types/Endpoint';
+import {type BrowseEndpoint, type EndpointOf} from '../types/Endpoint';
+import type Endpoint from '../types/Endpoint';
+import { EndpointType } from '../types/Endpoint';
 
 const EXCLUDE_ENDPOINT_BROWSE_IDS = [
   'SPreport_history',

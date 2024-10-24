@@ -1,13 +1,13 @@
 
 import AlbumViewHandler from './AlbumViewHandler';
-import BaseViewHandler from './BaseViewHandler';
+import type BaseViewHandler from './BaseViewHandler';
 import GenericViewHandler from './GenericViewHandler';
 import MusicItemViewHandler from './MusicItemViewHandler';
 import OptionSelectionViewHandler from './OptionSelectionViewHandler';
 import PlaylistViewHandler from './PlaylistViewHandler';
 import RootViewHandler from './RootViewHandler';
 import SearchViewHandler from './SearchViewHandler';
-import View from './View';
+import type View from './View';
 import ViewHelper from './ViewHelper';
 
 type HandlerClass<V extends View, T extends BaseViewHandler<V>> =

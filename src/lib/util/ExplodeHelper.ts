@@ -1,11 +1,11 @@
 import ytmusic from '../YTMusicContext';
-import { ExplodedTrackInfo, QueueItem } from '../controller/browse/view-handlers/ExplodableViewHandler';
-import { GenericView } from '../controller/browse/view-handlers/GenericViewHandler';
-import { MusicItemView } from '../controller/browse/view-handlers/MusicItemViewHandler';
-import View from '../controller/browse/view-handlers/View';
+import { type ExplodedTrackInfo, type QueueItem } from '../controller/browse/view-handlers/ExplodableViewHandler';
+import { type GenericView } from '../controller/browse/view-handlers/GenericViewHandler';
+import { type MusicItemView } from '../controller/browse/view-handlers/MusicItemViewHandler';
+import type View from '../controller/browse/view-handlers/View';
 import ViewHelper from '../controller/browse/view-handlers/ViewHelper';
-import { ContentItem } from '../types';
-import { EndpointType, WatchContinuationEndpoint, WatchEndpoint } from '../types/Endpoint';
+import { type ContentItem } from '../types';
+import { EndpointType, type WatchContinuationEndpoint, type WatchEndpoint } from '../types/Endpoint';
 import EndpointHelper from './EndpointHelper';
 
 export default class ExplodeHelper {
@@ -89,7 +89,7 @@ export default class ExplodeHelper {
    * @param {*} uri
    * @returns Converted URI or `null` on failure
    */
-  static async convertLegacyExplodeUri(uri: string) {
+  static convertLegacyExplodeUri(uri: string) {
     // Current view
     const view = ViewHelper.getViewsFromUri(uri).pop();
 

@@ -36,7 +36,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _PlayController_instances, _PlayController_mpdPlugin, _PlayController_autoplayListener, _PlayController_lastPlaybackInfo, _PlayController_prefetchPlaybackStateFixer, _PlayController_addAutoplayListener, _PlayController_removeAutoplayListener, _PlayController_updateTrackWithPlaybackInfo, _PlayController_doPlay, _PlayController_appendTrackTypeToStreamUrl, _PlayController_mpdAddTags, _PlayController_handleAutoplay, _PlayController_findLastPlayedTrackQueueIndex, _PlayController_getAutoplayItems, _PrefetchPlaybackStateFixer_instances, _PrefetchPlaybackStateFixer_positionAtPrefetch, _PrefetchPlaybackStateFixer_prefetchedTrack, _PrefetchPlaybackStateFixer_volumioPushStateListener, _PrefetchPlaybackStateFixer_addPushStateListener, _PrefetchPlaybackStateFixer_removePushStateListener, _PrefetchPlaybackStateFixer_handleVolumioPushState;
+var _PlayController_instances, _a, _PlayController_mpdPlugin, _PlayController_autoplayListener, _PlayController_lastPlaybackInfo, _PlayController_prefetchPlaybackStateFixer, _PlayController_addAutoplayListener, _PlayController_removeAutoplayListener, _PlayController_updateTrackWithPlaybackInfo, _PlayController_doPlay, _PlayController_appendTrackTypeToStreamUrl, _PlayController_mpdAddTags, _PlayController_handleAutoplay, _PlayController_findLastPlayedTrackQueueIndex, _PlayController_getAutoplayItems, _PrefetchPlaybackStateFixer_instances, _PrefetchPlaybackStateFixer_positionAtPrefetch, _PrefetchPlaybackStateFixer_prefetchedTrack, _PrefetchPlaybackStateFixer_volumioPushStateListener, _PrefetchPlaybackStateFixer_addPushStateListener, _PrefetchPlaybackStateFixer_removePushStateListener, _PrefetchPlaybackStateFixer_handleVolumioPushState;
 Object.defineProperty(exports, "__esModule", { value: true });
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -76,7 +76,7 @@ class PlayController {
     async clearAddPlayTrack(track) {
         YTMusicContext_1.default.getLogger().info(`[ytmusic-play] clearAddPlayTrack: ${track.uri}`);
         __classPrivateFieldGet(this, _PlayController_prefetchPlaybackStateFixer, "f")?.notifyPrefetchCleared();
-        const { videoId, info: playbackInfo } = await PlayController.getPlaybackInfoFromUri(track.uri);
+        const { videoId, info: playbackInfo } = await _a.getPlaybackInfoFromUri(track.uri);
         if (!playbackInfo) {
             throw Error(`Could not obtain playback info for: ${videoId})`);
         }
@@ -107,7 +107,7 @@ class PlayController {
         }
         if (YTMusicContext_1.default.getConfigValue('addToHistory')) {
             try {
-                playbackInfo.addToHistory();
+                void playbackInfo.addToHistory();
             }
             catch (error) {
                 YTMusicContext_1.default.getLogger().error(YTMusicContext_1.default.getErrorMessage(`[ytmusic-play] Error: could not add to history (${videoId}): `, error));
@@ -175,7 +175,7 @@ class PlayController {
         }
         let streamUrl;
         try {
-            const { videoId, info: playbackInfo } = await PlayController.getPlaybackInfoFromUri(track.uri);
+            const { videoId, info: playbackInfo } = await _a.getPlaybackInfoFromUri(track.uri);
             streamUrl = playbackInfo?.stream?.url;
             if (!streamUrl || !playbackInfo) {
                 throw Error(`Stream not found for: '${videoId}'`);
@@ -198,7 +198,7 @@ class PlayController {
         return res;
     }
     async getGotoUri(type, uri) {
-        const playbackInfo = (await PlayController.getPlaybackInfoFromUri(uri))?.info;
+        const playbackInfo = (await _a.getPlaybackInfoFromUri(uri))?.info;
         if (!playbackInfo) {
             return null;
         }
@@ -238,13 +238,12 @@ class PlayController {
         return null;
     }
 }
-exports.default = PlayController;
-_PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = new WeakMap(), _PlayController_lastPlaybackInfo = new WeakMap(), _PlayController_prefetchPlaybackStateFixer = new WeakMap(), _PlayController_instances = new WeakSet(), _PlayController_addAutoplayListener = function _PlayController_addAutoplayListener() {
+_a = PlayController, _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = new WeakMap(), _PlayController_lastPlaybackInfo = new WeakMap(), _PlayController_prefetchPlaybackStateFixer = new WeakMap(), _PlayController_instances = new WeakSet(), _PlayController_addAutoplayListener = function _PlayController_addAutoplayListener() {
     if (!__classPrivateFieldGet(this, _PlayController_autoplayListener, "f")) {
         __classPrivateFieldSet(this, _PlayController_autoplayListener, () => {
             __classPrivateFieldGet(this, _PlayController_mpdPlugin, "f").getState().then((state) => {
                 if (state.status === 'stop') {
-                    __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_handleAutoplay).call(this);
+                    void __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_handleAutoplay).call(this);
                     __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_removeAutoplayListener).call(this);
                 }
             });
@@ -403,7 +402,7 @@ _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = ne
     }
     if (autoplayItems.length === 0) {
         // Fetch from radio endpoint as last resort.
-        const playbackInfo = await PlayController.getPlaybackInfoFromUri(__classPrivateFieldGet(this, _PlayController_lastPlaybackInfo, "f").track.uri);
+        const playbackInfo = await _a.getPlaybackInfoFromUri(__classPrivateFieldGet(this, _PlayController_lastPlaybackInfo, "f").track.uri);
         const radioEndpoint = playbackInfo.info?.radioEndpoint;
         if (radioEndpoint && (!autoplayContext || radioEndpoint.payload.playlistId !== autoplayContext.fetchEndpoint.payload.playlistId)) {
             const radioContents = await endpointModel.getContents(radioEndpoint);
@@ -428,6 +427,7 @@ _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = ne
         .map((item) => ExplodeHelper_1.default.getExplodedTrackInfoFromMusicItem(item))
         .map((item) => ExplodeHelper_1.default.createQueueItemFromExplodedTrackInfo(item));
 };
+exports.default = PlayController;
 /**
  * Given state is updated by calling `setConsumeUpdateService('mpd', true)` (`consumeIgnoreMetadata`: true), when moving to
  * prefetched track there's no guarantee the state machine will store the correct consume state obtained from MPD. It depends on

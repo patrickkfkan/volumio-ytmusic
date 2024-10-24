@@ -1,5 +1,5 @@
-import { ContentItem } from '.';
-import { BrowseContinuationEndpoint, BrowseEndpoint, SearchContinuationEndpoint, SearchEndpoint, WatchContinuationEndpoint, WatchEndpoint } from './Endpoint';
+import { type ContentItem } from '.';
+import { type BrowseContinuationEndpoint, type BrowseEndpoint, type SearchContinuationEndpoint, type SearchEndpoint, type WatchContinuationEndpoint, type WatchEndpoint } from './Endpoint';
 export interface Header {
     type: 'album' | 'playlist' | 'channel' | 'search' | 'generic';
     title: string;

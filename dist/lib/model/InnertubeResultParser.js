@@ -449,15 +449,16 @@ class InnertubeResultParser {
             case 'browse':
                 return __checkType(__buildBrowseEndpoint());
             case '/search':
-            case 'search':
+            case 'search': {
                 const searchEndpoint = {
                     type: Endpoint_1.EndpointType.Search,
                     payload: __createPayload(['query', 'params'])
                 };
                 return __checkType(searchEndpoint);
+            }
             case '/player':
             case 'next':
-            case '/next':
+            case '/next': {
                 const watchEndpoint = {
                     type: Endpoint_1.EndpointType.Watch,
                     payload: __createPayload(['videoId', 'playlistId', 'params', 'index', 'playlistSetVideoId'])
@@ -467,6 +468,7 @@ class InnertubeResultParser {
                     watchEndpoint.musicVideoType = musicVideoType;
                 }
                 return __checkType(watchEndpoint);
+            }
             default:
         }
         const commands = data?.payload?.commands;
@@ -547,7 +549,6 @@ class InnertubeResultParser {
         return null;
     }
 }
-exports.default = InnertubeResultParser;
 _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpointResult = function _InnertubeResultParser_parseWatchContinuationEndpointResult(data) {
     const continuationContents = data.continuation_contents;
     if (continuationContents instanceof volumio_youtubei_js_1.PlaylistPanelContinuation) {
@@ -814,7 +815,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                 // - Album has Play button in top level buttons
                 // - Playlist has Shuffle Play button
                 switch (button.icon_type) {
-                    case 'MUSIC_SHUFFLE':
+                    case 'MUSIC_SHUFFLE': {
                         const mdhShufflePlayEndpoint = this.parseEndpoint(button.endpoint, Endpoint_1.EndpointType.Watch);
                         const mdhShufflePlayText = this.unwrap(button.text);
                         if (mdhShufflePlayEndpoint && mdhShufflePlayText) {
@@ -836,6 +837,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                             }
                         }
                         break;
+                    }
                     case 'PLAY_ARROW':
                         type = 'album';
                         endpoint = this.parseEndpoint(button.endpoint, Endpoint_1.EndpointType.Watch);
@@ -1603,4 +1605,5 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
     }
     return null;
 };
+exports.default = InnertubeResultParser;
 //# sourceMappingURL=InnertubeResultParser.js.map

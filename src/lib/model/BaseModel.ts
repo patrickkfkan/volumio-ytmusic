@@ -1,4 +1,4 @@
-import { IParsedResponse, Parser, SectionListContinuation, YTNodes } from 'volumio-youtubei.js';
+import { type IParsedResponse, Parser, SectionListContinuation, YTNodes } from 'volumio-youtubei.js';
 import InnertubeLoader from './InnertubeLoader';
 
 const MAX_APPEND_SECTIONS_COUNT = 10;

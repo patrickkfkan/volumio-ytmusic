@@ -7,17 +7,17 @@ import vconf from 'v-conf';
 
 import ytmusic from './lib/YTMusicContext';
 import BrowseController from './lib/controller/browse/BrowseController';
-import SearchController, { SearchQuery } from './lib/controller/search/SearchController';
+import SearchController, { type SearchQuery } from './lib/controller/search/SearchController';
 import PlayController from './lib/controller/play/PlayController';
 import { jsPromiseToKew } from './lib/util';
 import { AuthStatus } from './lib/util/Auth';
 import Model, { ModelType } from './lib/model';
-import { Account, I18nOptionValue, I18nOptions } from './lib/types/PluginConfig';
-import { QueueItem } from './lib/controller/browse/view-handlers/ExplodableViewHandler';
+import { type Account, type I18nOptionValue, type I18nOptions } from './lib/types/PluginConfig';
+import { type QueueItem } from './lib/controller/browse/view-handlers/ExplodableViewHandler';
 import ViewHelper from './lib/controller/browse/view-handlers/ViewHelper';
 import InnertubeLoader from './lib/model/InnertubeLoader';
 import YTMusicNowPlayingMetadataProvider from './lib/util/YTMusicNowPlayingMetadataProvider';
-import { NowPlayingPluginSupport } from 'now-playing-common';
+import { type NowPlayingPluginSupport } from 'now-playing-common';
 
 interface GotoParams extends QueueItem {
   type: 'album' | 'artist';
@@ -217,15 +217,16 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
     const defer = libQ.defer();
 
     const model = Model.getInstance(ModelType.Config);
+    const selected: Record<keyof I18nOptions, I18nOptionValue> = {
+      region: { label: '', value: '' },
+      language: { label: '', value: '' }
+    };
     model.getI18nOptions().then((options) => {
       const selectedValues = {
         region: ytmusic.getConfigValue('region'),
         language: ytmusic.getConfigValue('language')
       };
-      const selected: Record<keyof I18nOptions, I18nOptionValue> = {
-        region: { label: '', value: '' },
-        language: { label: '', value: '' }
-      };
+      
       (Object.keys(selected) as (keyof I18nOptions)[]).forEach((key) => {
         selected[key] = options[key]?.optionValues.find((ov) => ov.value === selectedValues[key]) || { label: '', value: selectedValues[key] };
       });
@@ -234,6 +235,14 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
         options,
         selected
       });
+    })
+    .catch((error: unknown) => {
+      ytmusic.getLogger().error(ytmusic.getErrorMessage('[ytmusic] Error getting i18n options:', error));
+      ytmusic.toast('warning', 'Could not obtain i18n options');
+      defer.resolve({
+        options: model.getDefaultI18nOptions(),
+        selected
+      })
     });
 
     return defer.promise;
@@ -246,8 +255,8 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
     model.getInfo().then((account) => {
       defer.resolve(account);
     })
-      .catch((error) => {
-        ytmusic.getLogger().warn(`Failed to get account config: ${error}`);
+      .catch((error: unknown) => {
+        ytmusic.getLogger().warn(ytmusic.getErrorMessage('Failed to get account config:', error));
         defer.resolve(null);
       });
 
@@ -260,8 +269,8 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
     InnertubeLoader.getInstance().then(({ auth }) => {
       defer.resolve(auth.getStatus());
     })
-      .catch((error) => {
-        ytmusic.getLogger().warn(`Failed to get auth status: ${error}`);
+      .catch((error: unknown) => {
+        ytmusic.getLogger().warn(ytmusic.getErrorMessage('Failed to get auth status:', error));
         defer.resolve(null);
       });
 
@@ -289,7 +298,7 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
   async configSignOut() {
     if (InnertubeLoader.hasInstance()) {
       const { auth } = await InnertubeLoader.getInstance();
-      auth.signOut();
+      void auth.signOut();
     }
   }
 
@@ -431,6 +440,9 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
         ytmusic.toast('error', errMsg);
         defer.reject(Error(errMsg));
       }
+    })
+    .catch((error: unknown) => {
+      ytmusic.getLogger().error(ytmusic.getErrorMessage('[ytmusic] Error obtaining goto URL:', error));
     });
 
     return defer.promise;

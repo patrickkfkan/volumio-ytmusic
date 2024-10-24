@@ -1,10 +1,13 @@
 import ytmusic from '../YTMusicContext';
-import Innertube, { FormatOptions, YTNodes, Endpoints as YTEndpoints, Utils as YTUtils, YTMusic, Parser } from 'volumio-youtubei.js';
+import {type Types} from 'volumio-youtubei.js';
+import type Innertube from 'volumio-youtubei.js';
+import { YTNodes, Endpoints as YTEndpoints, Utils as YTUtils, YTMusic, Parser } from 'volumio-youtubei.js';
 import { BaseModel } from './BaseModel';
 import InnertubeResultParser from './InnertubeResultParser';
-import Endpoint, { EndpointType } from '../types/Endpoint';
-import MusicItemPlaybackInfo from '../types/MusicItemPlaybackInfo';
-import { ContentItem } from '../types';
+import type Endpoint from '../types/Endpoint';
+import { EndpointType } from '../types/Endpoint';
+import type MusicItemPlaybackInfo from '../types/MusicItemPlaybackInfo';
+import { type ContentItem } from '../types';
 import EndpointHelper from '../util/EndpointHelper';
 
 // https://gist.github.com/sidneys/7095afe4da4ae58694d128b1034e01e2
@@ -20,7 +23,7 @@ const ITAG_TO_BITRATE: Record<string, string> = {
   '774': 'VBR 256'
 };
 
-const BEST_AUDIO_FORMAT: FormatOptions = {
+const BEST_AUDIO_FORMAT: Types.FormatOptions = {
   type: 'audio',
   format: 'any',
   quality: 'best'

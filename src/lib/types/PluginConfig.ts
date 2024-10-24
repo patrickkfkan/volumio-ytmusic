@@ -1,4 +1,4 @@
-import { Credentials } from 'volumio-youtubei.js';
+import { type OAuth2Tokens } from 'volumio-youtubei.js';
 
 export type PluginConfigKey = keyof PluginConfigSchema;
 export type PluginConfigValue<T extends PluginConfigKey> = PluginConfigSchema[T]['defaultValue'];
@@ -17,7 +17,7 @@ export interface PluginConfigSchema {
   addToHistory: PluginConfigSchemaEntry<boolean>;
   prefetch: PluginConfigSchemaEntry<boolean>;
   preferOpus: PluginConfigSchemaEntry<boolean>;
-  authCredentials: PluginConfigSchemaEntry<Credentials | undefined, true>;
+  authCredentials: PluginConfigSchemaEntry<OAuth2Tokens | undefined, true>;
 }
 
 export interface I18nOptions {

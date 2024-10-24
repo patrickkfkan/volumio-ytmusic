@@ -81,7 +81,7 @@ class ExplodeHelper {
      * @param {*} uri
      * @returns Converted URI or `null` on failure
      */
-    static async convertLegacyExplodeUri(uri) {
+    static convertLegacyExplodeUri(uri) {
         // Current view
         const view = ViewHelper_1.default.getViewsFromUri(uri).pop();
         if (!view) {
@@ -237,7 +237,6 @@ class ExplodeHelper {
         };
     }
 }
-exports.default = ExplodeHelper;
 _a = ExplodeHelper, _ExplodeHelper_getUriFromExplodedTrackInfo = function _ExplodeHelper_getUriFromExplodedTrackInfo(info) {
     /**
      * `explodeTrackData` - necessary because Volumio adds track uri in
@@ -250,4 +249,5 @@ _a = ExplodeHelper, _ExplodeHelper_getUriFromExplodedTrackInfo = function _Explo
     };
     return `ytmusic/${ViewHelper_1.default.constructUriSegmentFromView(targetView)}`;
 };
+exports.default = ExplodeHelper;
 //# sourceMappingURL=ExplodeHelper.js.map
