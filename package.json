@@ -35,6 +35,7 @@
 	},
 	"devDependencies": {
 		"@types/fs-extra": "^8.1.2",
+		"@types/jsdom": "^21.1.7",
 		"@types/node": "^20.5.1",
 		"@types/string-format": "^2.0.0",
 		"@typescript-eslint/eslint-plugin": "^8.6.0",
@@ -45,6 +46,8 @@
 		"winston": "^3.8.2"
 	},
 	"dependencies": {
+		"bgutils-js": "^3.0.0",
+		"jsdom": "^25.0.1",
 		"kew": "^0.7.0",
 		"now-playing-common": "git+https://github.com/patrickkfkan/volumio-now-playing-common#v0.3.0",
 		"string-format": "^2.0.0",

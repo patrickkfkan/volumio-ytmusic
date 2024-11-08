@@ -1,7 +1,7 @@
 import {type OAuth2Tokens, type DeviceAndUserCode, type Utils as YTUtils} from 'volumio-youtubei.js';
 import type Innertube from 'volumio-youtubei.js';
-import EventEmitter from 'events';
 import ytmusic from '../YTMusicContext';
+import EventEmitter from 'events';
 
 export enum AuthStatus {
   SignedIn = 'SignedIn',
@@ -26,6 +26,7 @@ const INITIAL_SIGNED_OUT_STATUS: AuthStatusInfo = {
 
 export enum AuthEvent {
   SignIn = 'SignIn',
+  SignOut = 'SignOut',
   Pending = 'Pending',
   Error = 'Error'
 }
@@ -34,10 +35,12 @@ export default class Auth extends EventEmitter {
 
   #innertube: Innertube | null;
   #handlers: any;
+  #handlersRegistered: boolean;
 
   constructor() {
     super();
     this.#innertube = null;
+    this.#handlersRegistered = false;
   }
 
   static create(innertube: Innertube) {
@@ -49,7 +52,6 @@ export default class Auth extends EventEmitter {
       onError: auth.#handleError.bind(auth),
       onCredentials: auth.#handleSuccess.bind(auth)
     };
-    auth.#registerHandlers();
     return auth;
   }
 
@@ -73,20 +75,8 @@ export default class Auth extends EventEmitter {
   }
 
   #handleSuccess(data: { credentials: OAuth2Tokens }) {
-    const oldStatusInfo = ytmusic.get<AuthStatusInfo>('authStatusInfo');
-    ytmusic.set<AuthStatusInfo>('authStatusInfo', {
-      status: AuthStatus.SignedIn
-    });
     ytmusic.setConfigValue('authCredentials', data.credentials);
-    if (!oldStatusInfo || oldStatusInfo.status !== AuthStatus.SignedIn) {
-      ytmusic.getLogger().info('[ytmusic] Auth success');
-      ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_SIGN_IN_SUCCESS'));
-      ytmusic.refreshUIConfig();
-      this.emit(AuthEvent.SignIn);
-    }
-    else {
-      ytmusic.getLogger().info('[ytmusic] Auth credentials updated');
-    }
+    ytmusic.getLogger().info('[ytmusic] Auth credentials updated');
   }
 
   #handleError(err: YTUtils.OAuth2Error) {
@@ -105,11 +95,12 @@ export default class Auth extends EventEmitter {
   }
 
   #registerHandlers() {
-    if (this.#innertube?.session) {
+    if (this.#innertube?.session && !this.#handlersRegistered) {
       this.#innertube.session.on('auth', this.#handlers.onSuccess);
       this.#innertube.session.on('auth-pending', this.#handlers.onPending);
       this.#innertube.session.on('auth-error', this.#handlers.onError);
       this.#innertube.session.on('update-credentials', this.#handlers.onCredentials);
+      this.#handlersRegistered = true;
     }
   }
 
@@ -120,6 +111,7 @@ export default class Auth extends EventEmitter {
       this.#innertube.session.off('auth-error', this.#handlers.onError);
       this.#innertube.session.off('update-credentials', this.#handlers.onCredentials);
     }
+    this.#handlersRegistered = false;
   }
 
   signIn() {
@@ -136,8 +128,21 @@ export default class Auth extends EventEmitter {
         ytmusic.getLogger().info('[ytmusic] Obtaining device code for sign-in...');
       }
 
+      this.#registerHandlers();
       ytmusic.refreshUIConfig();
       this.#innertube.session.signIn(credentials)
+      .then(() => {
+        const oldStatusInfo = ytmusic.get<AuthStatusInfo>('authStatusInfo');
+        if (this.#innertube?.session.logged_in && (!oldStatusInfo || oldStatusInfo.status !== AuthStatus.SignedIn)) {
+          ytmusic.set<AuthStatusInfo>('authStatusInfo', {
+            status: AuthStatus.SignedIn
+          });
+          ytmusic.getLogger().info('[ytmusic] Auth success');
+          ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_SIGN_IN_SUCCESS'));
+          ytmusic.refreshUIConfig();
+          this.emit(AuthEvent.SignIn);
+        }
+      })
       .catch((error: unknown) => {
         ytmusic.getLogger().error(ytmusic.getErrorMessage('[ytmusic] Caught Innertube sign-in error:', error, false));
       });
@@ -149,12 +154,13 @@ export default class Auth extends EventEmitter {
       await this.#innertube.session.signOut();
 
       ytmusic.deleteConfigValue('authCredentials');
+      ytmusic.set<AuthStatusInfo>('authStatusInfo', INITIAL_SIGNED_OUT_STATUS);
 
+      ytmusic.getLogger().info('[ytmusic] Auth revoked');
       ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_SIGNED_OUT'));
 
-      // Sign in again with empty credentials to reset status to SIGNED_OUT
-      // And obtain new device code
-      this.signIn();
+      this.emit(AuthEvent.SignOut);
+      ytmusic.refreshUIConfig();
     }
   }
 
