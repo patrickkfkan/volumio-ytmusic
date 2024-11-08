@@ -53,6 +53,7 @@ const model_1 = __importStar(require("./lib/model"));
 const ViewHelper_1 = __importDefault(require("./lib/controller/browse/view-handlers/ViewHelper"));
 const InnertubeLoader_1 = __importDefault(require("./lib/model/InnertubeLoader"));
 const YTMusicNowPlayingMetadataProvider_1 = __importDefault(require("./lib/util/YTMusicNowPlayingMetadataProvider"));
+const volumio_youtubei_js_1 = require("volumio-youtubei.js");
 class ControllerYTMusic {
     constructor(context) {
         _ControllerYTMusic_instances.add(this);
@@ -194,6 +195,7 @@ class ControllerYTMusic {
         __classPrivateFieldSet(this, _ControllerYTMusic_searchController, new SearchController_1.default(), "f");
         __classPrivateFieldSet(this, _ControllerYTMusic_playController, new PlayController_1.default(), "f");
         __classPrivateFieldSet(this, _ControllerYTMusic_nowPlayingMetadataProvider, new YTMusicNowPlayingMetadataProvider_1.default(), "f");
+        volumio_youtubei_js_1.Parser.setParserErrorHandler(() => null); // Disable Innertube parser error reporting
         __classPrivateFieldGet(this, _ControllerYTMusic_instances, "m", _ControllerYTMusic_addToBrowseSources).call(this);
         return kew_1.default.resolve();
     }

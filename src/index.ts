@@ -18,6 +18,7 @@ import ViewHelper from './lib/controller/browse/view-handlers/ViewHelper';
 import InnertubeLoader from './lib/model/InnertubeLoader';
 import YTMusicNowPlayingMetadataProvider from './lib/util/YTMusicNowPlayingMetadataProvider';
 import { type NowPlayingPluginSupport } from 'now-playing-common';
+import { Parser } from 'volumio-youtubei.js';
 
 interface GotoParams extends QueueItem {
   type: 'album' | 'artist';
@@ -186,7 +187,8 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
     this.#playController = new PlayController();
 
     this.#nowPlayingMetadataProvider = new YTMusicNowPlayingMetadataProvider();
-
+    Parser.setParserErrorHandler(() => null); // Disable Innertube parser error reporting
+    
     this.#addToBrowseSources();
 
     return libQ.resolve();
