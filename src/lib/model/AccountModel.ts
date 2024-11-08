@@ -1,3 +1,4 @@
+import { YTNodes } from 'volumio-youtubei.js';
 import { type PluginConfig } from '../types';
 import { AuthStatus } from '../util/Auth';
 import { BaseModel } from './BaseModel';
@@ -16,16 +17,19 @@ export default class AccountModel extends BaseModel {
 
     // This plugin supports single sign-in, so there should only be one account in contents.
     // But we still get the 'selected' one just to be sure.
-    const account = info.contents?.contents.find((ac: any) => ac.is_selected);
-    const name = InnertubeResultParser.unwrap(account?.account_name);
+    const account = info.contents?.contents.find((ac) => ac instanceof YTNodes.AccountItem && ac.is_selected);
 
-    if (account && name) {
-      const result: PluginConfig.Account = {
-        name,
-        photo: InnertubeResultParser.parseThumbnail(account.account_photo)
-      };
+    if (account instanceof YTNodes.AccountItem) {
+      const name = InnertubeResultParser.unwrap(account?.account_name);
 
-      return result;
+      if (name) {
+        const result: PluginConfig.Account = {
+          name,
+          photo: InnertubeResultParser.parseThumbnail(account.account_photo)
+        };
+
+        return result;
+      }
     }
 
     return null;
