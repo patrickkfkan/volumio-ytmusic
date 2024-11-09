@@ -1,8 +1,14 @@
+<a href='https://ko-fi.com/C0C5RGOOP' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+
 # YouTube Music plugin for Volumio
 
 Credit goes to the [YouTube.js](https://github.com/LuanRT/YouTube.js) project. This plugin uses a [modified version](https://github.com/patrickkfkan/Volumio-YouTube.js) of that library for content fetching and ytmusic login.
 
 ## Changelog
+
+2.0.0
+- Release for Bookworm-based Volumio
+- Fix 403 playback error by using PO tokens (experimental)
 
 1.1.3
 - Fix hanging "InnertubeLoader: creating Auth instance..."
