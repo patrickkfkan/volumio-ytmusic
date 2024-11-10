@@ -1,5 +1,5 @@
 import ytmusic, { type I18nKey } from '../YTMusicContext';
-import { type IBrowseResponse, type INextResponse, type ISearchResponse, YTNodes, Misc as YTMisc, type Helpers as YTHelpers, type IParsedResponse, PlaylistPanelContinuation, GridContinuation, MusicShelfContinuation, MusicPlaylistShelfContinuation, SectionListContinuation } from 'volumio-youtubei.js';
+import { type IBrowseResponse, type INextResponse, type ISearchResponse, YTNodes, Misc as YTMisc, Helpers as YTHelpers, type IParsedResponse, PlaylistPanelContinuation, GridContinuation, MusicShelfContinuation, MusicPlaylistShelfContinuation, SectionListContinuation } from 'volumio-youtubei.js';
 import {type BrowseContinuationEndpoint, type BrowseEndpoint, type EndpointOf, type SearchEndpoint, type WatchContinuationEndpoint, type WatchEndpoint} from '../types/Endpoint';
 import type Endpoint from '../types/Endpoint';
 import { EndpointType } from '../types/Endpoint';
@@ -58,7 +58,7 @@ export default class InnertubeResultParser {
 
   static #parseWatchContinuationEndpointResult(data: IParsedResponse): WatchContinuationContent | null {
     const continuationContents = data.continuation_contents;
-    if (continuationContents instanceof PlaylistPanelContinuation) {
+    if (continuationContents?.is(PlaylistPanelContinuation)) {
       if (continuationContents.contents) {
         const parsedItems = continuationContents.contents.reduce<WatchContinuationContent['items']>((result, item) => {
           const parsedItem = this.parseContentItem(item);
@@ -178,17 +178,17 @@ export default class InnertubeResultParser {
 
   static #parseBrowseEndpointResult(data: Partial<IBrowseResponse & ISearchResponse>, originatingEndpoint: Endpoint): PageContent | null {
     if (data.continuation_contents &&
-      (data.continuation_contents instanceof MusicShelfContinuation ||
-        data.continuation_contents instanceof MusicPlaylistShelfContinuation ||
-        data.continuation_contents instanceof GridContinuation ||
-        data.continuation_contents instanceof SectionListContinuation)) {
-      const continuation = !(data.continuation_contents instanceof SectionListContinuation) ?
+      (data.continuation_contents.is(MusicShelfContinuation) ||
+        data.continuation_contents.is(MusicPlaylistShelfContinuation) ||
+        data.continuation_contents.is(GridContinuation) ||
+        data.continuation_contents.is(SectionListContinuation))) {
+      const continuation = !data.continuation_contents.is(SectionListContinuation) ?
         data.continuation_contents.continuation : undefined;
       const parseData: SectionContent = {
         contents: data.continuation_contents.contents,
         continuation
       };
-      if (data.continuation_contents instanceof SectionListContinuation && data.continuation_contents.header) {
+      if (data.continuation_contents.is(SectionListContinuation) && data.continuation_contents.header) {
         parseData.header = data.continuation_contents.header;
       }
       const section = this.#parseContentToSection(parseData, originatingEndpoint.type);
@@ -299,7 +299,7 @@ export default class InnertubeResultParser {
 
     // MusicEditablePlaylistDetailHeader
     // Occurs in playlists; wraps around actual header (MusicDetailHeader)
-    if (data instanceof YTNodes.MusicEditablePlaylistDetailHeader) {
+    if (data.is(YTNodes.MusicEditablePlaylistDetailHeader)) {
       return this.#parseHeader(data.header, originatingEndpoint);
     }
 
@@ -313,7 +313,7 @@ export default class InnertubeResultParser {
     const subtitles: string[] = [];
 
     // Artist
-    if (data instanceof YTNodes.MusicImmersiveHeader) {
+    if (data.is(YTNodes.MusicImmersiveHeader)) {
       type = 'channel';
       title = this.unwrap(data.title);
       description = this.unwrap(data.description);
@@ -328,7 +328,7 @@ export default class InnertubeResultParser {
     }
     // Album / Playlist
     // -- Legacy: might remove in future - should now be MusicResponsiveHeader
-    else if (data instanceof YTNodes.MusicDetailHeader) {
+    else if (data.is(YTNodes.MusicDetailHeader)) {
       title = this.unwrap(data.title);
       if (data.description) {
         description = this.unwrap(data.description);
@@ -352,9 +352,9 @@ export default class InnertubeResultParser {
       }
       thumbnail = this.parseThumbnail(data.thumbnails);
       const mdhMenu = this.unwrap(data.menu);
-      if (mdhMenu instanceof YTNodes.Menu) {
+      if (mdhMenu?.is(YTNodes.Menu)) {
         const mdhTopLevelButtons = mdhMenu.top_level_buttons.filter(
-          (button) => button instanceof YTNodes.Button);
+          (button) => button.is(YTNodes.Button));
         for (const button of mdhTopLevelButtons) {
           // We determine the header type here:
           // - Album has Play button in top level buttons
@@ -393,7 +393,7 @@ export default class InnertubeResultParser {
     }
     // Album / Playlist
     // -- Current (replaces MusicDetailHeader)
-    else if (data instanceof YTNodes.MusicResponsiveHeader) {
+    else if (data.is(YTNodes.MusicResponsiveHeader)) {
       title = this.unwrap(data.title);
       if (data.description) {
         description = this.unwrap(data.description.description);
@@ -429,15 +429,15 @@ export default class InnertubeResultParser {
       // Type
       type = EndpointHelper.isAlbumEndpoint(originatingEndpoint) ? 'album' : 'playlist';
       // Play endpoint
-      const playButton = data.buttons.find((button) => button instanceof YTNodes.MusicPlayButton);
+      const playButton = data.buttons.find((button) => button.is(YTNodes.MusicPlayButton));
       if (playButton) {
         endpoint = this.parseEndpoint(playButton.endpoint, EndpointType.Watch);
       }
       // Shuffle endpoint
-      const mdhMenu = data.buttons.find((button) => button instanceof YTNodes.Menu);
-      if (mdhMenu instanceof YTNodes.Menu) {
+      const mdhMenu = data.buttons.find((button) => button.is(YTNodes.Menu));
+      if (mdhMenu?.is(YTNodes.Menu)) {
         for (const menuItem of mdhMenu.items) {
-          if (menuItem instanceof YTNodes.MenuNavigationItem && menuItem.icon_type === 'MUSIC_SHUFFLE') {
+          if (menuItem.is(YTNodes.MenuNavigationItem) && menuItem.icon_type === 'MUSIC_SHUFFLE') {
             const mdhShufflePlayEndpoint = this.parseEndpoint(menuItem.endpoint, EndpointType.Watch);
             const mdhShufflePlayText = this.unwrap(menuItem.text);
             if (mdhShufflePlayEndpoint && mdhShufflePlayText) {
@@ -453,7 +453,7 @@ export default class InnertubeResultParser {
       }
     }
     // Generic - MusicHeader (e.g. Explore -> Charts)
-    else if (data instanceof YTNodes.MusicHeader) {
+    else if (data.is(YTNodes.MusicHeader)) {
       type = 'generic';
       title = this.unwrap(data.title);
     }
@@ -517,8 +517,10 @@ export default class InnertubeResultParser {
       items: []
     };
 
-    if (data instanceof YTNodes.MusicPlaylistShelf) {
-      section.playlistId = data.playlist_id;
+    const ytNode = data instanceof YTHelpers.YTNode ? data : null;
+
+    if (ytNode?.is(YTNodes.MusicPlaylistShelf)) {
+      section.playlistId = ytNode.playlist_id;
     }
 
     const __parseContentItem = (contentItem: NestedSection | YTHelpers.YTNode) => {
@@ -603,8 +605,8 @@ export default class InnertubeResultParser {
     const sectionButtons: PageElement.Button[] = [];
 
     // -- buttons from MusicCarouselShelfBasicHeader
-    if (dataHeader instanceof YTNodes.MusicCarouselShelfBasicHeader) {
-      if (dataHeader?.more_content) {
+    if (dataHeader instanceof YTHelpers.YTNode && dataHeader.is(YTNodes.MusicCarouselShelfBasicHeader)) {
+      if (dataHeader.more_content) {
         const text = dataHeader.more_content.text;
         const endpoint = this.parseEndpoint(dataHeader.more_content.endpoint);
         if (text && endpoint) {
@@ -616,7 +618,7 @@ export default class InnertubeResultParser {
           });
         }
       }
-      else if (dataHeader?.end_icons?.[0]) {
+      else if (dataHeader.end_icons?.[0]) {
         const icon = dataHeader.end_icons[0];
         const endpoint = this.parseEndpoint(icon.endpoint);
         if (icon.tooltip && endpoint) {
@@ -631,10 +633,10 @@ export default class InnertubeResultParser {
     }
 
     // -- buttons from MusicShelf ('more content' link at bottom, like 'Show All' in search results)
-    if (data instanceof YTNodes.MusicShelf) {
-      if (data.endpoint && data.bottom_text) {
-        const text = this.unwrap(data.bottom_text);
-        const endpoint = this.parseEndpoint(data.endpoint);
+    if (ytNode?.is(YTNodes.MusicShelf)) {
+      if (ytNode.endpoint && ytNode.bottom_text) {
+        const text = this.unwrap(ytNode.bottom_text);
+        const endpoint = this.parseEndpoint(ytNode.endpoint);
         if (text && endpoint) {
           sectionButtons.push({
             type: 'button',
@@ -644,12 +646,12 @@ export default class InnertubeResultParser {
           });
         }
       }
-      if (data.bottom_button) {
-        const endpoint = this.parseEndpoint(data.bottom_button.endpoint);
-        if (data.bottom_button.text && endpoint) {
+      if (ytNode.bottom_button) {
+        const endpoint = this.parseEndpoint(ytNode.bottom_button.endpoint);
+        if (ytNode.bottom_button.text && endpoint) {
           sectionButtons.push({
             type: 'button',
-            text: data.bottom_button.text,
+            text: ytNode.bottom_button.text,
             endpoint,
             placement: 'bottom'
           });
@@ -663,13 +665,15 @@ export default class InnertubeResultParser {
           __parseContentItem(contentItem);
         }
 
-        if (!(data instanceof YTNodes.Grid) && dataContents.some((item) =>
-          item instanceof YTNodes.MusicResponsiveListItem ||
-          item instanceof YTNodes.PlaylistPanelVideo ||
-          item instanceof YTNodes.PlaylistPanelVideoWrapper)) {
+        if (!ytNode?.is(YTNodes.Grid) && dataContents.some((item) =>
+          item instanceof YTHelpers.YTNode && (
+            item.is(YTNodes.MusicResponsiveListItem) ||
+            item.is(YTNodes.PlaylistPanelVideo) ||
+            item.is(YTNodes.PlaylistPanelVideoWrapper)
+          ))) {
           section.itemLayout = 'list';
         }
-        else if (dataContents.some((item) => item instanceof YTNodes.MusicTwoRowItem)) {
+        else if (dataContents.some((item) => item.is(YTNodes.MusicTwoRowItem))) {
           section.itemLayout = 'grid';
         }
 
@@ -681,12 +685,12 @@ export default class InnertubeResultParser {
 
     // MusicCardShelf ('Top Results' in search)
     // Need to set correct title and extract the main item of the shelf.
-    if (data instanceof YTNodes.MusicCardShelf && data.header instanceof YTNodes.MusicCardShelfHeaderBasic) {
-      const title = this.unwrap(data.header.title);
+    if (ytNode?.is(YTNodes.MusicCardShelf) && ytNode.header?.is(YTNodes.MusicCardShelfHeaderBasic)) {
+      const title = this.unwrap(ytNode.header.title);
       if (title) {
         section.title = title;
       }
-      const mainItem = this.#extractMainItemFromMusicCardShelf(data);
+      const mainItem = this.#extractMainItemFromMusicCardShelf(ytNode);
       if (mainItem) {
         section.items.unshift(mainItem);
       }
@@ -788,19 +792,19 @@ export default class InnertubeResultParser {
       return null;
     }
 
-    if (data instanceof YTNodes.PlaylistPanelVideoWrapper) {
+    if (data.is(YTNodes.PlaylistPanelVideoWrapper)) {
       const target = data.primary || data.counterpart?.first();
       return target ? this.parseContentItem(target) : null;
     }
 
     // MusicItem (song / video)
     let musicItemType: 'video' | 'song' | null = null;
-    if ((data instanceof YTNodes.MusicResponsiveListItem ||
-      data instanceof YTNodes.MusicTwoRowItem) &&
+    if ((data.is(YTNodes.MusicResponsiveListItem) ||
+      data.is(YTNodes.MusicTwoRowItem)) &&
       (data.item_type === 'song' || data.item_type === 'video')) {
       musicItemType = data.item_type;
     }
-    else if (data instanceof YTNodes.PlaylistPanelVideo) {
+    else if (data.is(YTNodes.PlaylistPanelVideo)) {
       musicItemType = 'video';
     }
 
@@ -815,7 +819,7 @@ export default class InnertubeResultParser {
         duration: number | null = null,
         album: ContentItem.MusicItem['album'] | null = null;
 
-      if (data instanceof YTNodes.MusicResponsiveListItem) {
+      if (data.is(YTNodes.MusicResponsiveListItem)) {
         videoId = data.id;
         title = this.unwrap(data.title);
         subtitle = this.unwrap(data.subtitle);
@@ -837,7 +841,7 @@ export default class InnertubeResultParser {
           }
         }
       }
-      if (data instanceof YTNodes.MusicTwoRowItem) {
+      if (data.is(YTNodes.MusicTwoRowItem)) {
         videoId = data.id;
         title = this.unwrap(data.title);
         subtitle = this.unwrap(data.subtitle);
@@ -845,7 +849,7 @@ export default class InnertubeResultParser {
         radioEndpoint = this.findRadioEndpoint(data);
         thumbnail = this.parseThumbnail(data.thumbnail);
       }
-      if (data instanceof YTNodes.PlaylistPanelVideo) {
+      if (data.is(YTNodes.PlaylistPanelVideo)) {
         videoId = data.video_id;
         title = this.unwrap(data.title);
         endpoint = this.parseEndpoint(data.endpoint, EndpointType.Watch);
@@ -908,8 +912,8 @@ export default class InnertubeResultParser {
     }
 
     // Artist
-    const isArtist = (data instanceof YTNodes.MusicResponsiveListItem ||
-      data instanceof YTNodes.MusicTwoRowItem) &&
+    const isArtist = (data.is(YTNodes.MusicResponsiveListItem) ||
+      data.is(YTNodes.MusicTwoRowItem)) &&
       data.item_type === 'artist';
     const isPrivateArtist = isArtist && data.id?.startsWith('FEmusic_library_privately_owned_artist');
 
@@ -917,11 +921,11 @@ export default class InnertubeResultParser {
       let name: string | null = null,
         thumbnail: string | null = null;
 
-      if (data instanceof YTNodes.MusicResponsiveListItem) {
+      if (data.is(YTNodes.MusicResponsiveListItem)) {
         name = this.unwrap(data.name);
         thumbnail = this.parseThumbnail(data.thumbnails);
       }
-      if (data instanceof YTNodes.MusicTwoRowItem) {
+      if (data.is(YTNodes.MusicTwoRowItem)) {
         name = this.unwrap(data.title);
         thumbnail = this.parseThumbnail(data.thumbnail);
       }
@@ -955,8 +959,8 @@ export default class InnertubeResultParser {
     let musicFolderType: 'album' | 'playlist' | null = null,
       browseEndpoint: BrowseEndpoint | null = null;
 
-    if ((data instanceof YTNodes.MusicResponsiveListItem ||
-      data instanceof YTNodes.MusicTwoRowItem) &&
+    if ((data.is(YTNodes.MusicResponsiveListItem) ||
+      data.is(YTNodes.MusicTwoRowItem)) &&
       (data.item_type === 'album' || data.item_type === 'playlist')) {
       musicFolderType = data.item_type;
     }
@@ -1031,10 +1035,10 @@ export default class InnertubeResultParser {
         }
 
         let thumbnail: string | null = null;
-        if (data instanceof YTNodes.MusicResponsiveListItem) {
+        if (data.is(YTNodes.MusicResponsiveListItem)) {
           thumbnail = this.parseThumbnail(data.thumbnails);
         }
-        if (data instanceof YTNodes.MusicTwoRowItem) {
+        if (data.is(YTNodes.MusicTwoRowItem)) {
           thumbnail = this.parseThumbnail(data.thumbnail);
         }
         if (thumbnail) {
@@ -1048,7 +1052,7 @@ export default class InnertubeResultParser {
     }
 
     // Endpoint link from MusicNavigationButton
-    if (data instanceof YTNodes.MusicNavigationButton) {
+    if (data.is(YTNodes.MusicNavigationButton)) {
       const endpoint = this.parseEndpoint(data.endpoint, EndpointType.Browse);
       if (endpoint) {
         const result: ContentItem.EndpointLink = {
@@ -1066,15 +1070,15 @@ export default class InnertubeResultParser {
     }
 
     // Endpoint link from MusicResponsiveListItem / MusicTwoRowItem
-    if ((data instanceof YTNodes.MusicResponsiveListItem ||
-      data instanceof YTNodes.MusicTwoRowItem) &&
+    if ((data.is(YTNodes.MusicResponsiveListItem) ||
+      data.is(YTNodes.MusicTwoRowItem)) &&
       (data.item_type === 'endpoint' || data.item_type === 'library_artist' ||
         isPrivateArtist)) {
       const endpoint = this.parseEndpoint(data.endpoint);
       if (endpoint) {
         let title: string | null = null,
           thumbnail: string | null = null;
-        if (data instanceof YTNodes.MusicResponsiveListItem) {
+        if (data.is(YTNodes.MusicResponsiveListItem)) {
           title = this.unwrap(data.title || data.name);
           thumbnail = this.parseThumbnail(data.thumbnails);
         }
@@ -1106,7 +1110,7 @@ export default class InnertubeResultParser {
     }
 
     // Endpoint link from DidYouMean
-    if (data instanceof YTNodes.DidYouMean) {
+    if (data.is(YTNodes.DidYouMean)) {
       const endpoint = this.parseEndpoint(data.endpoint, EndpointType.Browse);
       if (endpoint) {
         const result: ContentItem.EndpointLink = {
@@ -1122,7 +1126,7 @@ export default class InnertubeResultParser {
     }
 
     // Endpoint link from ShowingResultsFor
-    if (data instanceof YTNodes.ShowingResultsFor) {
+    if (data.is(YTNodes.ShowingResultsFor)) {
       const endpoint = this.parseEndpoint(data.original_query_endpoint, EndpointType.Browse);
       if (endpoint) {
         const result: ContentItem.EndpointLink = {
@@ -1138,7 +1142,7 @@ export default class InnertubeResultParser {
     }
 
     // Automix
-    if (data instanceof YTNodes.AutomixPreviewVideo) {
+    if (data.is(YTNodes.AutomixPreviewVideo)) {
       const endpoint = this.parseEndpoint(data.playlist_video?.endpoint, EndpointType.Watch);
       if (endpoint) {
         const result: ContentItem.Automix = {
@@ -1219,7 +1223,7 @@ export default class InnertubeResultParser {
       return arr;
     };
 
-    if (data instanceof YTNodes.MusicDetailHeader) {
+    if (data.is(YTNodes.MusicDetailHeader)) {
       // Innertube does not parse multiple artists in MusicDetailHeader and also requires
       // Artists to have endpoints. We need to do our own parsing here.
       // However, I am not sure if the parsing logic here is foolproof or will break other
@@ -1234,14 +1238,14 @@ export default class InnertubeResultParser {
       return _extractFromTextRuns(data.subtitle?.runs, 2);
     }
 
-    if (((data instanceof YTNodes.MusicResponsiveListItem || data instanceof YTNodes.MusicTwoRowItem) &&
-      (data.item_type === 'song' || data.item_type === 'video')) || data instanceof YTNodes.MusicCardShelf) {
+    if (((data.is(YTNodes.MusicResponsiveListItem) || data.is(YTNodes.MusicTwoRowItem)) &&
+      (data.item_type === 'song' || data.item_type === 'video')) || data.is(YTNodes.MusicCardShelf)) {
 
       // Note that there is no checking of item type for MusicCardShelf. We rely on
       // #extractMainItemFromMusicCardShelf() to call this correctly.
 
-      if (data instanceof YTNodes.MusicResponsiveListItem ||
-        data instanceof YTNodes.MusicCardShelf) {
+      if (data.is(YTNodes.MusicResponsiveListItem) ||
+        data.is(YTNodes.MusicCardShelf)) {
         // If language is set to non-English, then videos will most likely be misidentified as songs, since Innertube
         // Determines type by checking the second flex column elements for '* views'. This is fine from the plugins'
         // Perspective, as songs and videos are handled the same way.
@@ -1309,7 +1313,7 @@ export default class InnertubeResultParser {
       return _extractFromTextRuns(data.subtitle?.runs);
     }
 
-    if (data instanceof YTNodes.PlaylistPanelVideo) {
+    if (data.is(YTNodes.PlaylistPanelVideo)) {
       // Similar drill to MusicResponsiveListItem
       const runIndex = _findRunIndexByArtistEndpointCheck(data.long_by_line_text.runs);
 
@@ -1366,14 +1370,14 @@ export default class InnertubeResultParser {
   }
 
   static findRadioEndpoint(data: YTHelpers.YTNode): WatchEndpoint | null {
-    if ((data instanceof YTNodes.MusicResponsiveListItem ||
-      data instanceof YTNodes.MusicTwoRowItem ||
-      data instanceof YTNodes.PlaylistPanelVideo) && data.menu) {
+    if ((data.is(YTNodes.MusicResponsiveListItem) ||
+      data.is(YTNodes.MusicTwoRowItem) ||
+      data.is(YTNodes.PlaylistPanelVideo)) && data.menu) {
 
       const menu = this.unwrap(data.menu);
-      if (menu && menu instanceof YTNodes.Menu) {
+      if (menu && menu.is(YTNodes.Menu)) {
         for (const item of menu.items) {
-          if (item instanceof YTNodes.MenuNavigationItem && item.icon_type === 'MIX') {
+          if (item.is(YTNodes.MenuNavigationItem) && item.icon_type === 'MIX') {
             const endpoint = this.parseEndpoint(item.endpoint, EndpointType.Watch);
             if (endpoint) {
               return endpoint;
@@ -1570,8 +1574,9 @@ export default class InnertubeResultParser {
       }, []);
     }
 
-    if (unwrapped instanceof type) {
-      return [ unwrapped ] as InstanceType<K>[];
+    const ytNode = unwrapped instanceof YTHelpers.YTNode ? unwrapped : null;
+    if (ytNode?.is(type)) {
+      return [ ytNode ];
     }
     return Object.keys(unwrapped)
       .filter((key) => !excludeSearchFields.includes(key) && key !== 'type')
@@ -1664,9 +1669,9 @@ export default class InnertubeResultParser {
     }
 
     const title = this.unwrap(menu.title);
-    const menuItems = menu.options.filter((item) => item instanceof YTNodes.MusicMultiSelectMenuItem);
+    const menuItems = menu.options.filter((item) => item.is(YTNodes.MusicMultiSelectMenuItem));
     const optionValues = menuItems.reduce<PageElement.Option['optionValues']>((result, item) => {
-      if (item instanceof YTNodes.MusicMultiSelectMenuItem) {
+      if (item.is(YTNodes.MusicMultiSelectMenuItem)) {
         const endpoint = this.parseEndpoint(item.endpoint, EndpointType.Browse, EndpointType.BrowseContinuation);
         // For MusicSortFilterButton, endpoint can be `null`.
         result.push({

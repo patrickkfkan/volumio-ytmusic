@@ -23,7 +23,7 @@ class BaseModel {
             while (sectionListContinuation && appendCount < MAX_APPEND_SECTIONS_COUNT) {
                 const response = await innertube.actions.execute(url, { token: sectionListContinuation, client: 'YTMUSIC' });
                 const page = volumio_youtubei_js_1.Parser.parseResponse(response.data);
-                if (page.continuation_contents instanceof volumio_youtubei_js_1.SectionListContinuation && page.continuation_contents.contents) {
+                if (page.continuation_contents?.is(volumio_youtubei_js_1.SectionListContinuation) && page.continuation_contents.contents) {
                     sectionList.contents.push(...page.continuation_contents.contents);
                     sectionListContinuation = page.continuation_contents.continuation;
                     appendCount++;

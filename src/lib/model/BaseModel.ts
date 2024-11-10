@@ -21,7 +21,7 @@ export abstract class BaseModel {
       while (sectionListContinuation && appendCount < MAX_APPEND_SECTIONS_COUNT) {
         const response = await innertube.actions.execute(url, { token: sectionListContinuation, client: 'YTMUSIC' });
         const page = Parser.parseResponse(response.data);
-        if (page.continuation_contents instanceof SectionListContinuation && page.continuation_contents.contents) {
+        if (page.continuation_contents?.is(SectionListContinuation) && page.continuation_contents.contents) {
           sectionList.contents.push(...page.continuation_contents.contents);
           sectionListContinuation = page.continuation_contents.continuation;
           appendCount++;
