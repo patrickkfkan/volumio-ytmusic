@@ -59,7 +59,17 @@
           "element": "input",
           "type": "text",
           "label": "TRANSLATE.YTMUSIC_COOKIE",
+          "doc": "TRANSLATE.YTMUSIC_DOC_COOKIE",
           "value": ""
+        },
+        {
+          "id": "cookieGuide",
+          "element": "button",
+          "label": "TRANSLATE.YTMUSIC_COOKIE_GUIDE",
+          "onClick": {
+            "type": "openUrl",
+            "url": "https://github.com/patrickkfkan/Volumio-YouTube.js/wiki/How-to-obtain-Cookie"
+          }
         }
       ]
     },

@@ -333,7 +333,7 @@ _ControllerYTMusic_context = new WeakMap(), _ControllerYTMusic_config = new Weak
         return model.getInfo();
     }
     catch (error) {
-        YTMusicContext_1.default.getLogger().warn(YTMusicContext_1.default.getErrorMessage('Failed to get account config:', error));
+        YTMusicContext_1.default.getLogger().warn(YTMusicContext_1.default.getErrorMessage('[ytmusic] Failed to get account config:', error));
         return null;
     }
 }, _ControllerYTMusic_addToBrowseSources = function _ControllerYTMusic_addToBrowseSources() {
