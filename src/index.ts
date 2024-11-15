@@ -192,7 +192,7 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
       return model.getInfo();
     }
     catch (error: unknown) {
-      ytmusic.getLogger().warn(ytmusic.getErrorMessage('Failed to get account config:', error));
+      ytmusic.getLogger().warn(ytmusic.getErrorMessage('[ytmusic] Failed to get account config:', error));
       return null;
     }
   }
