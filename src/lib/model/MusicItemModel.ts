@@ -1,7 +1,7 @@
 import ytmusic from '../YTMusicContext';
 import {type Types} from 'volumio-youtubei.js';
 import type Innertube from 'volumio-youtubei.js';
-import { YTNodes, Endpoints as YTEndpoints, Utils as YTUtils, YTMusic, Parser } from 'volumio-youtubei.js';
+import { YTNodes, Utils as YTUtils, YTMusic, Parser } from 'volumio-youtubei.js';
 import { BaseModel } from './BaseModel';
 import InnertubeResultParser from './InnertubeResultParser';
 import type Endpoint from '../types/Endpoint';
@@ -78,16 +78,14 @@ export default class MusicItemModel extends BaseModel {
     };
   }
 
-  // Based on Innertube.Music.#fetchInfoFromListItem(), which requires MusicTwoRowItem which we don't have.
+  // Based on Innertube.Music.#fetchInfoFromEndpoint()
   async #getTrackInfo(innertube: Innertube, endpoint: Endpoint) {
-    const innertubeEndpoint = new YTNodes.NavigationEndpoint({});
-    innertubeEndpoint.metadata.api_url = YTEndpoints.PlayerEndpoint.PATH;
-    innertubeEndpoint.payload = YTEndpoints.PlayerEndpoint.build({
-      video_id: endpoint.payload.videoId,
-      playlist_id: endpoint.payload.playlistId,
+    const innertubeEndpoint = new YTNodes.NavigationEndpoint({ watchEndpoint: {
+      videoId: endpoint.payload.videoId,
+      playlistId: endpoint.payload.playlistId,
       params: endpoint.payload.params,
       sts: innertube.session.player?.sts
-    });
+    } });
 
     const player_response = innertubeEndpoint.call(innertube.actions, {
       client: 'YTMUSIC',
