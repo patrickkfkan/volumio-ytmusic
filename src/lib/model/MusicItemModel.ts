@@ -80,14 +80,16 @@ export default class MusicItemModel extends BaseModel {
 
   // Based on Innertube.Music.#fetchInfoFromEndpoint()
   async #getTrackInfo(innertube: Innertube, endpoint: Endpoint) {
-    const innertubeEndpoint = new YTNodes.NavigationEndpoint({ watchEndpoint: {
+    const watchEndpoint = new YTNodes.NavigationEndpoint({ watchEndpoint: {
       videoId: endpoint.payload.videoId,
       playlistId: endpoint.payload.playlistId,
       params: endpoint.payload.params,
       sts: innertube.session.player?.sts
     } });
 
-    const player_response = innertubeEndpoint.call(innertube.actions, {
+    const nextEndpoint = new YTNodes.NavigationEndpoint({ watchNextEndpoint: { videoId: endpoint.payload.videoId }});
+
+    const player_response = watchEndpoint.call(innertube.actions, {
       client: 'YTMUSIC',
       playbackContext: {
         contentPlaybackContext: {
@@ -98,10 +100,9 @@ export default class MusicItemModel extends BaseModel {
       }
     });
 
-    const next_response = innertubeEndpoint.call(innertube.actions, {
+    const next_response = nextEndpoint.call(innertube.actions, {
       client: 'YTMUSIC',
-      enablePersistentPlaylistPanel: true,
-      override_endpoint: '/next'
+      enablePersistentPlaylistPanel: true
     });
 
     const cpn = YTUtils.generateRandomString(16);
