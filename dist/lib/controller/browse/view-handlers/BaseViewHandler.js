@@ -56,8 +56,8 @@ class BaseViewHandler {
         __classPrivateFieldSet(this, _BaseViewHandler_models, {}, "f");
         __classPrivateFieldSet(this, _BaseViewHandler_renderers, {}, "f");
     }
-    async browse() {
-        return {};
+    browse() {
+        return Promise.resolve({});
     }
     explode() {
         throw Error('Operation not supported');
@@ -122,6 +122,9 @@ class BaseViewHandler {
                 case renderers_1.RendererType.Playlist:
                     renderer = renderers_1.default.getInstance(renderers_1.RendererType.Playlist, __classPrivateFieldGet(this, _BaseViewHandler_uri, "f"), __classPrivateFieldGet(this, _BaseViewHandler_currentView, "f"), __classPrivateFieldGet(this, _BaseViewHandler_previousViews, "f"));
                     break;
+                case renderers_1.RendererType.Podcast:
+                    renderer = renderers_1.default.getInstance(renderers_1.RendererType.Podcast, __classPrivateFieldGet(this, _BaseViewHandler_uri, "f"), __classPrivateFieldGet(this, _BaseViewHandler_currentView, "f"), __classPrivateFieldGet(this, _BaseViewHandler_previousViews, "f"));
+                    break;
                 case renderers_1.RendererType.MusicItem:
                     renderer = renderers_1.default.getInstance(renderers_1.RendererType.MusicItem, __classPrivateFieldGet(this, _BaseViewHandler_uri, "f"), __classPrivateFieldGet(this, _BaseViewHandler_currentView, "f"), __classPrivateFieldGet(this, _BaseViewHandler_previousViews, "f"));
                     break;
@@ -145,7 +148,6 @@ class BaseViewHandler {
         };
     }
 }
-exports.default = BaseViewHandler;
 _BaseViewHandler_uri = new WeakMap(), _BaseViewHandler_currentView = new WeakMap(), _BaseViewHandler_previousViews = new WeakMap(), _BaseViewHandler_models = new WeakMap(), _BaseViewHandler_renderers = new WeakMap(), _BaseViewHandler_instances = new WeakSet(), _BaseViewHandler_constructContinuationUri = function _BaseViewHandler_constructContinuationUri(data) {
     const { continuation, prevItemCount, bundle } = data;
     const endpoint = continuation.endpoint;
@@ -170,4 +172,5 @@ _BaseViewHandler_uri = new WeakMap(), _BaseViewHandler_currentView = new WeakMap
     segments.push(`${ViewHelper_1.default.constructUriSegmentFromView(newView)}@noExplode=1`);
     return segments.join('/');
 };
+exports.default = BaseViewHandler;
 //# sourceMappingURL=BaseViewHandler.js.map
