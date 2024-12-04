@@ -6,6 +6,9 @@ Credit goes to the [YouTube.js](https://github.com/LuanRT/YouTube.js) project. T
 
 ## Changelog
 
+1.2.0 (Buster backport)
+- Backport from v2.2.0
+
 2.2.0
 - Add 'Active Profile' setting for accounts with multiple profiles
 - Fix album info missing from playback info
