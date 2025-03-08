@@ -6,6 +6,10 @@ Credit goes to the [YouTube.js](https://github.com/LuanRT/YouTube.js) project. T
 
 ## Changelog
 
+2.3.0
+- Update YT dependencies
+- Fix continuation sometimes missing from parsed data due to YT changes (e.g. playlist)
+
 2.2.3
 - Fix search sometimes unresponsive
 - Fix synced lyrics not fetched
