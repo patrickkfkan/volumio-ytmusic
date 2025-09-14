@@ -700,8 +700,8 @@ export default class InnertubeResultParser {
 
     // MusicCardShelf ('Top Results' in search)
     // Need to set correct title and extract the main item of the shelf.
-    if (ytNode?.is(YTNodes.MusicCardShelf) && ytNode.header?.is(YTNodes.MusicCardShelfHeaderBasic)) {
-      const title = this.unwrap(ytNode.header.title);
+    if (ytNode?.is(YTNodes.MusicCardShelf)) {
+      const title = ytNode.header ? this.unwrap(ytNode.header.title) : null;
       if (title) {
         section.title = title;
       }
@@ -1740,7 +1740,7 @@ export default class InnertubeResultParser {
   static #extractMainItemFromMusicCardShelf(data: YTNodes.MusicCardShelf) {
     if (data.title) {
       const title = this.unwrap(data.title);
-      const endpoint = this.parseEndpoint(data.title.endpoint, EndpointType.Browse, EndpointType.Watch);
+      const endpoint = this.parseEndpoint(data.title.endpoint || data.on_tap, EndpointType.Browse, EndpointType.Watch);
       const isBrowseEndpoint = endpoint?.type === EndpointType.Browse;
       const isWatchEndpoint = endpoint?.type === EndpointType.Watch;
 
