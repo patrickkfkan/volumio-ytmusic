@@ -1152,7 +1152,7 @@ export default class InnertubeResultParser {
 
     // Endpoint link from DidYouMean
     if (data.is(YTNodes.DidYouMean)) {
-      const endpoint = this.parseEndpoint(data.endpoint, EndpointType.Browse);
+      const endpoint = this.parseEndpoint(data.endpoint, EndpointType.Browse, EndpointType.Search);
       if (endpoint) {
         const result: ContentItem.EndpointLink = {
           type: 'endpointLink',
@@ -1168,7 +1168,7 @@ export default class InnertubeResultParser {
 
     // Endpoint link from ShowingResultsFor
     if (data.is(YTNodes.ShowingResultsFor)) {
-      const endpoint = this.parseEndpoint(data.original_query_endpoint, EndpointType.Browse);
+      const endpoint = this.parseEndpoint(data.original_query_endpoint, EndpointType.Browse, EndpointType.Search);
       if (endpoint) {
         const result: ContentItem.EndpointLink = {
           type: 'endpointLink',

@@ -329,7 +329,7 @@ class InnertubeResultParser {
         }
         // Endpoint link from DidYouMean
         if (data.is(volumio_youtubei_js_1.YTNodes.DidYouMean)) {
-            const endpoint = this.parseEndpoint(data.endpoint, Endpoint_1.EndpointType.Browse);
+            const endpoint = this.parseEndpoint(data.endpoint, Endpoint_1.EndpointType.Browse, Endpoint_1.EndpointType.Search);
             if (endpoint) {
                 const result = {
                     type: 'endpointLink',
@@ -343,7 +343,7 @@ class InnertubeResultParser {
         }
         // Endpoint link from ShowingResultsFor
         if (data.is(volumio_youtubei_js_1.YTNodes.ShowingResultsFor)) {
-            const endpoint = this.parseEndpoint(data.original_query_endpoint, Endpoint_1.EndpointType.Browse);
+            const endpoint = this.parseEndpoint(data.original_query_endpoint, Endpoint_1.EndpointType.Browse, Endpoint_1.EndpointType.Search);
             if (endpoint) {
                 const result = {
                     type: 'endpointLink',
