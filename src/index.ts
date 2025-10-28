@@ -17,7 +17,7 @@ import ViewHelper from './lib/controller/browse/view-handlers/ViewHelper';
 import InnertubeLoader from './lib/model/InnertubeLoader';
 import YTMusicNowPlayingMetadataProvider from './lib/util/YTMusicNowPlayingMetadataProvider';
 import { type NowPlayingPluginSupport } from 'now-playing-common';
-import { Parser } from 'volumio-youtubei.js';
+import { Parser } from 'volumio-yt-support/dist/innertube';
 
 interface GotoParams extends QueueItem {
   type: 'album' | 'artist';
@@ -160,10 +160,10 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
 
     this.#nowPlayingMetadataProvider = null;
 
-    InnertubeLoader.reset();
-    ytmusic.reset();
-
-    return libQ.resolve();
+    return jsPromiseToKew(
+      InnertubeLoader.reset()
+        .then(() => ytmusic.reset())
+      );
   }
 
   getConfigurationFiles() {
@@ -202,10 +202,10 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
     }
   }
 
-  #getConfigAccountInfo() {
+  async #getConfigAccountInfo() {
     const model = Model.getInstance(ModelType.Account);
     try {
-      return model.getInfo();
+      return await model.getInfo();
     }
     catch (error: unknown) {
       ytmusic.getLogger().warn(ytmusic.getErrorMessage('[ytmusic] Failed to get account config:', error));
@@ -213,7 +213,7 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
     }
   }
 
-  configSaveI18n(data: any) {
+  async configSaveI18n(data: any) {
     const oldRegion = ytmusic.hasConfigKey('region') ? ytmusic.getConfigValue('region') : null;
     const oldLanguage = ytmusic.hasConfigKey('language') ? ytmusic.getConfigValue('language') : null;
     const region = data.region.value;
@@ -223,7 +223,7 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
       ytmusic.setConfigValue('region', region);
       ytmusic.setConfigValue('language', language);
 
-      InnertubeLoader.applyI18nConfig();
+      await InnertubeLoader.applyI18nConfig();
       Model.getInstance(ModelType.Config).clearCache();
       ytmusic.refreshUIConfig();
     }
@@ -231,7 +231,7 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
     ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_SETTINGS_SAVED'));
   }
 
-  configSaveAccount(data: any) {
+  async configSaveAccount(data: any) {
     const oldCookie = ytmusic.hasConfigKey('cookie') ? ytmusic.getConfigValue('cookie') : null;
     const cookie = data.cookie?.trim();
     const oldActiveChannelHandle = ytmusic.getConfigValue('activeChannelHandle');
@@ -248,7 +248,7 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
     }
     ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_SETTINGS_SAVED'));
     if (resetInnertube) {
-      InnertubeLoader.reset();
+      await InnertubeLoader.reset();
       ytmusic.refreshUIConfig();
     }
   }

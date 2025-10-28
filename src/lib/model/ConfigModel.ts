@@ -1,4 +1,4 @@
-import { Misc as YTMisc } from 'volumio-youtubei.js';
+import { Misc as YTMisc } from 'volumio-yt-support/dist/innertube';
 import ytmusic from '../YTMusicContext';
 import { type I18nOptionValue, type I18nOptions, type PluginConfigSchema } from '../types/PluginConfig';
 import { BaseModel } from './BaseModel';
