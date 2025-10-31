@@ -16,124 +16,49 @@ import type AutoplayContext from '../../types/AutoplayContext';
 import { type AlbumView } from '../browse/view-handlers/AlbumViewHandler';
 import { type GenericView } from '../browse/view-handlers/GenericViewHandler';
 import EventEmitter from 'events';
-
-interface MpdState {
-  status: 'play' | 'stop' | 'pause';
-  seek: number;
-  uri: string;
-}
+import { AutoplayManager, LastPlaybackInfo } from 'volumio-yt-support';
 
 export default class PlayController {
 
   #mpdPlugin: any;
   #prefetchPlaybackStateFixer: PrefetchPlaybackStateFixer | null;
   #prefetchAborter: AbortController | null;
-
-  /**
-   * Autoplay:
-   * Two listeners:
-   * 1. volumioStateListener: captures 'volumioPushState' events.
-   *    - On 'play' event of ytmusic track, stores the track being played in `lastPlaybackInfo` 
-   *      and ensures mpdStateListener is added.
-   *    - If on 'play' event of track povided by a different service, clear `lastPlaybackInfo` and
-   *      ensure mpdStateListener is removed,
-   * 2. mpdStateListener: captures MPD's system-player event.
-   *    - On 'stop' event, check if the track that stopped playing (`lastPlaybackInfo`) is last item
-   *      in queue. If so, fetch items for autoplay.
-   *    - If `lastPlaybackInfo` is null, that means the track that stopped playing is not provided by
-   *      the plugin. Nothing is to be done in this case.
-   * 
-   * In theory, volumioStateListener can be used to listen for 'stop' events as well, so
-   * mpdStateListener is not needed. In practice, it is difficult to process the events it emits:
-   * - multiple events with the same payload are emitted for no reason;
-   * - when moving to the next track in queue, a 'stop' event is emitted for the next track
-   *   before the 'play' event.
-   * 
-   * It is simpler and more predictable to just use volumioStateListener to capture the currently-played
-   * track, and mpdStateListener to capture moment when playback stops.
-   */
-  #volumioStateListener: ((state: any) => void) | null;
-  #mpdStateListener: (() => void) | null;
-  #lastPlaybackInfo: {
-    track: QueueItem;
-    position: number;
-  } | null;
+  #autoplayManager: AutoplayManager;
 
   constructor() {
     this.#mpdPlugin = ytmusic.getMpdPlugin();
     this.#prefetchPlaybackStateFixer = new PrefetchPlaybackStateFixer();
-    this.#prefetchPlaybackStateFixer.on('playPrefetch', (info: { track: QueueItem; position: number; }) => {
-      this.#lastPlaybackInfo = info;
-    });
     this.#prefetchAborter = null;
-    // Autoplay
-    this.#mpdStateListener = null;
-    this.#volumioStateListener = null;
-    this.#lastPlaybackInfo = null;
+    this.#autoplayManager = new AutoplayManager({
+      serviceName: 'ytmusic',
+      volumioCoreCommand: ytmusic.volumioCoreCommand,
+      stateMachine: ytmusic.getStateMachine(),
+      mpdPlugin: ytmusic.getMpdPlugin(),
+      getConfigValue: (key) => ytmusic.getConfigValue(key),
+      getAutoplayItems: this.#getAutoplayItems.bind(this),
+      logger: {
+        info: (msg) => ytmusic.getLogger().info(`[ytmusic] ${msg}`),
+        warn: (msg) => ytmusic.getLogger().warn(`[ytmusic] ${msg}`),
+        error: (msg) => ytmusic.getLogger().error(`[ytmusic] ${msg}`),
+      }
+    });
+    this.#autoplayManager.on('queued', ({items}) => {
+      if (items.length === 0) {
+        ytmusic.toast('info', ytmusic.getI18n('YTMUSIC_AUTOPLAY_NO_ITEMS'));
+      }
+      else if (items.length > 1) {
+        ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_AUTOPLAY_ADDED', items.length));
+      }
+      else {
+        ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_AUTOPLAY_ADDED_SINGLE', items[0].title));
+      }
+    });
   }
 
   reset() {
-    this.#removeMpdStateListener();
-    this.#removeVolumioStateListener();
+    this.#autoplayManager.disable();
     this.#prefetchPlaybackStateFixer?.reset();
     this.#prefetchPlaybackStateFixer = null;
-  }
-
-  #addVolumioStateListener() {
-    if (!this.#volumioStateListener) {
-      this.#volumioStateListener = (state: any) => {
-        if (state.status === 'play') {
-          if (state.service === 'ytmusic') {
-            this.#lastPlaybackInfo = {
-              track: state,
-              position: state.position
-            };
-            // Volumio state indicates playback of ytmusic track.
-            // Ensure we listen for changes in MPD state
-            this.#addMpdStateListener();
-          }
-          else {
-            // Different service - autoplay doesn't apply
-            this.#removeMpdStateListener();
-            this.#lastPlaybackInfo = null;
-            return;
-          }
-        }
-      };
-      ytmusic.volumioCoreCommand?.addCallback('volumioPushState', this.#volumioStateListener);
-    }
-  }
-
-  #removeVolumioStateListener() {
-    if (this.#volumioStateListener) {
-      const listeners = ytmusic.volumioCoreCommand?.callbacks?.['volumioPushState'] || [];
-      const index = listeners.indexOf(this.#volumioStateListener);
-      if (index >= 0) {
-        ytmusic.volumioCoreCommand.callbacks['volumioPushState'].splice(index, 1);
-      }
-      this.#volumioStateListener = null;
-    }
-  }
-
-  #addMpdStateListener() {
-    if (!this.#mpdStateListener) {
-      this.#mpdStateListener = () => {
-        this.#mpdPlugin.getState().then((state: MpdState) => {
-          if (state.status === 'stop') {
-            void this.#handleAutoplay();
-            this.#removeMpdStateListener();
-          }
-        });
-      };
-      this.#mpdPlugin.clientMpd.on('system-player', this.#mpdStateListener);
-    }
-  }
-
-  #removeMpdStateListener() {
-    if (this.#mpdStateListener) {
-      this.#mpdPlugin.clientMpd.removeListener('system-player', this.#mpdStateListener);
-      this.#mpdStateListener = null;
-    }
   }
 
   /**
@@ -172,13 +97,10 @@ export default class PlayController {
       sm.currentSongDuration = playbackInfo.duration * 1000;
     }
 
+    this.#autoplayManager.enable();
+
     const safeStreamUrl = stream.url.replace(/"/g, '\\"');
     await this.#doPlay(safeStreamUrl, track);
-
-    if (ytmusic.getConfigValue('autoplay')) {
-      this.#addMpdStateListener();
-      this.#addVolumioStateListener();
-    }
 
     if (ytmusic.getConfigValue('addToHistory')) {
       try {
@@ -205,8 +127,7 @@ export default class PlayController {
 
   // Returns kew promise!
   stop() {
-    this.#removeVolumioStateListener();
-    this.#removeMpdStateListener();
+    this.#autoplayManager.disable();
     ytmusic.getStateMachine().setConsumeUpdateService('mpd', true, false);
     return this.#mpdPlugin.stop();
   }
@@ -306,67 +227,8 @@ export default class PlayController {
     return libQ.resolve();
   }
 
-  async #handleAutoplay() {
-    if (!ytmusic.getConfigValue('autoplay') || !this.#lastPlaybackInfo) {
-      return;
-    }
-    const lastPlayedQueueIndex = this.#findLastPlayedTrackQueueIndex();
-    if (lastPlayedQueueIndex < 0) {
-      return;
-    }
-
-    const stateMachine = ytmusic.getStateMachine(),
-      state = stateMachine.getState(),
-      isLastTrack = stateMachine.getQueue().length - 1 === lastPlayedQueueIndex;
-    const noAutoplayConditions =  !isLastTrack || state.random || state.repeat || state.repeatSingle;
-    const getAutoplayItemsPromise = noAutoplayConditions ? Promise.resolve(null) : this.#getAutoplayItems();
-
-    if (!noAutoplayConditions) {
-      ytmusic.toast('info', ytmusic.getI18n('YTMUSIC_AUTOPLAY_FETCH'));
-    }
-
-    const items = await getAutoplayItemsPromise;
-    if (items && items.length > 0) {
-      // Add items to queue and play
-      const clearQueue = ytmusic.getConfigValue('autoplayClearQueue');
-      if (clearQueue) {
-        stateMachine.clearQueue();
-      }
-      stateMachine.addQueueItems(items).then((result: { firstItemIndex: number }) => {
-        if (items.length > 1) {
-          ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_AUTOPLAY_ADDED', items.length));
-        }
-        else {
-          ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_AUTOPLAY_ADDED_SINGLE', items[0].title));
-        }
-        stateMachine.play(result.firstItemIndex);
-      });
-    }
-    else if (!noAutoplayConditions) {
-      ytmusic.toast('info', ytmusic.getI18n('YTMUSIC_AUTOPLAY_NO_ITEMS'));
-    }
-  }
-
-  #findLastPlayedTrackQueueIndex() {
-    if (!this.#lastPlaybackInfo) {
-      return -1;
-    }
-
-    const queue = ytmusic.getStateMachine().getQueue();
-    const trackUri = this.#lastPlaybackInfo.track.uri;
-    const endIndex = this.#lastPlaybackInfo.position;
-
-    for (let i = endIndex; i >= 0; i--) {
-      if (queue[i]?.uri === trackUri) {
-        return i;
-      }
-    }
-
-    return -1;
-  }
-
-  async #getAutoplayItems(): Promise<QueueItem[]> {
-    const explodedTrackInfo = ExplodeHelper.getExplodedTrackInfoFromUri(this.#lastPlaybackInfo?.track?.uri);
+  async #getAutoplayItems(lastPlaybackInfo: LastPlaybackInfo): Promise<QueueItem[]> {
+    const explodedTrackInfo = ExplodeHelper.getExplodedTrackInfoFromUri(lastPlaybackInfo.track.uri);
     const autoplayContext = explodedTrackInfo?.autoplayContext;
 
     if (autoplayContext) {
@@ -420,9 +282,9 @@ export default class PlayController {
       }
     }
 
-    if (autoplayItems.length === 0 && this.#lastPlaybackInfo) {
+    if (autoplayItems.length === 0) {
       // Fetch from radio endpoint as last resort.
-      const playbackInfo = await PlayController.getPlaybackInfoFromUri(this.#lastPlaybackInfo.track.uri);
+      const playbackInfo = await PlayController.getPlaybackInfoFromUri(lastPlaybackInfo.track.uri);
       const radioEndpoint = playbackInfo.info?.radioEndpoint;
       if (radioEndpoint && (!autoplayContext || radioEndpoint.payload.playlistId !== autoplayContext.fetchEndpoint.payload.playlistId)) {
         const radioContents = await endpointModel.getContents(radioEndpoint);
