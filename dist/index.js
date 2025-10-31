@@ -291,7 +291,7 @@ class ControllerYTMusic {
         }
         if (!YTMusicContext_1.default.getConfigValue('hasAcceptedDisclaimer')) {
             return kew_1.default.reject({
-                errorMessage: `To access YouTube Music, go to the plugin's settings and accept the Disclaimer.`
+                errorMessage: YTMusicContext_1.default.getI18n('YTMUSIC_ERR_ACCEPT_DISCLAIMER_BROWSE')
             });
         }
         return (0, util_1.jsPromiseToKew)(__classPrivateFieldGet(this, _ControllerYTMusic_browseController, "f").browseUri(uri));
@@ -301,9 +301,8 @@ class ControllerYTMusic {
             return kew_1.default.reject('YouTube Music plugin is not started');
         }
         if (!YTMusicContext_1.default.getConfigValue('hasAcceptedDisclaimer')) {
-            return kew_1.default.reject({
-                errorMessage: `To access YouTube Music, go to the plugin's settings and accept the Disclaimer.`
-            });
+            YTMusicContext_1.default.toast('error', YTMusicContext_1.default.getI18n('YTMUSIC_ERR_ACCEPT_DISCLAIMER_PLAY'));
+            return kew_1.default.reject(YTMusicContext_1.default.getI18n('YTMUSIC_ERR_ACCEPT_DISCLAIMER_PLAY'));
         }
         return (0, util_1.jsPromiseToKew)(__classPrivateFieldGet(this, _ControllerYTMusic_browseController, "f").explodeUri(uri));
     }

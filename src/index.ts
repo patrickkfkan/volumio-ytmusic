@@ -348,7 +348,7 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
     }
     if (!ytmusic.getConfigValue('hasAcceptedDisclaimer')) {
       return libQ.reject({
-        errorMessage: `To access YouTube Music, go to the plugin's settings and accept the Disclaimer.`
+        errorMessage: ytmusic.getI18n('YTMUSIC_ERR_ACCEPT_DISCLAIMER_BROWSE')
       });
     }
     return jsPromiseToKew(this.#browseController.browseUri(uri));
@@ -359,9 +359,8 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
       return libQ.reject('YouTube Music plugin is not started');
     }
     if (!ytmusic.getConfigValue('hasAcceptedDisclaimer')) {
-      return libQ.reject({
-        errorMessage: `To access YouTube Music, go to the plugin's settings and accept the Disclaimer.`
-      });
+      ytmusic.toast('error', ytmusic.getI18n('YTMUSIC_ERR_ACCEPT_DISCLAIMER_PLAY'));
+      return libQ.reject(ytmusic.getI18n('YTMUSIC_ERR_ACCEPT_DISCLAIMER_PLAY'));
     }
     return jsPromiseToKew(this.#browseController.explodeUri(uri));
   }

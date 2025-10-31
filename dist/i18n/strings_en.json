@@ -59,5 +59,7 @@
   "YTMUSIC_ERR_NO_PLAYABLE_ITEMS_FOUND": "No playable items found",
   "YTMUSIC_ERR_ENDPOINT_INVALID": "Endpoint missing or invalid",
   "YTMUSIC_ERR_INVALID_URI": "Invalid URI",
-  "YTMUSIC_ERR_UNKNOWN_CHANNEL_HANDLE": "Unknown channel handle \"{}\""
+  "YTMUSIC_ERR_UNKNOWN_CHANNEL_HANDLE": "Unknown channel handle \"{}\"",
+  "YTMUSIC_ERR_ACCEPT_DISCLAIMER_BROWSE": "You need to go to YouTube Music plugin settings and accept the Disclaimer first.",
+  "YTMUSIC_ERR_ACCEPT_DISCLAIMER_PLAY": "Playback denied. You need to go to YouTube Music plugin settings and accept the Disclaimer first."
 }

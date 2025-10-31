@@ -72,6 +72,11 @@ export default class PlayController {
     this.#cancelPrefetch();
     this.#prefetchPlaybackStateFixer?.notifyPrefetchCleared();
 
+    if (!ytmusic.getConfigValue('hasAcceptedDisclaimer')) {
+      ytmusic.toast('error', ytmusic.getI18n('YTMUSIC_ERR_ACCEPT_DISCLAIMER_PLAY'));
+      return;
+    }
+
     const {videoId, info: playbackInfo} = await PlayController.getPlaybackInfoFromUri(track.uri);
 
     if (!playbackInfo) {
