@@ -13,6 +13,7 @@ const OPTION_IDS: Record<string, string> = {
 };
 
 export const PLUGIN_CONFIG_SCHEMA: PluginConfigSchema = {
+  hasAcceptedDisclaimer: { defaultValue: false, json: false },
   region: { defaultValue: 'US', json: false },
   language: { defaultValue: 'en', json: false },
   loadFullPlaylists: { defaultValue: false, json: false },

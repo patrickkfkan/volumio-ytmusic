@@ -20,6 +20,7 @@ const volumio_yt_support_1 = require("volumio-yt-support");
 class InnertubeLoader {
     static async getInstance() {
         if (!__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_instancePromise)) {
+            YTMusicContext_1.default.toast('info', YTMusicContext_1.default.getI18n('YTMUSIC_PREPPING_API'));
             __classPrivateFieldSet(this, _a, volumio_yt_support_1.InnertubeFactory.getWrappedInstance({
                 account: {
                     cookie: YTMusicContext_1.default.getConfigValue('cookie') || undefined,

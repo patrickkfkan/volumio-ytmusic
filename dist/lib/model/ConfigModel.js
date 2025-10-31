@@ -21,6 +21,7 @@ const OPTION_IDS = {
     'language': 'I18N_LANGUAGE'
 };
 exports.PLUGIN_CONFIG_SCHEMA = {
+    hasAcceptedDisclaimer: { defaultValue: false, json: false },
     region: { defaultValue: 'US', json: false },
     language: { defaultValue: 'en', json: false },
     loadFullPlaylists: { defaultValue: false, json: false },

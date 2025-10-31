@@ -63,6 +63,7 @@ const ViewHelper_1 = __importDefault(require("./lib/controller/browse/view-handl
 const InnertubeLoader_1 = __importDefault(require("./lib/model/InnertubeLoader"));
 const YTMusicNowPlayingMetadataProvider_1 = __importDefault(require("./lib/util/YTMusicNowPlayingMetadataProvider"));
 const innertube_1 = require("volumio-yt-support/dist/innertube");
+const fs_1 = require("fs");
 class ControllerYTMusic {
     constructor(context) {
         _ControllerYTMusic_instances.add(this);
@@ -78,18 +79,27 @@ class ControllerYTMusic {
     }
     getUIConfig() {
         const defer = kew_1.default.defer();
+        const hasAcceptedDisclaimer = YTMusicContext_1.default.getConfigValue('hasAcceptedDisclaimer');
         const langCode = __classPrivateFieldGet(this, _ControllerYTMusic_commandRouter, "f").sharedVars.get('language_code');
         const loadConfigPromises = [
             (0, util_1.kewToJSPromise)(__classPrivateFieldGet(this, _ControllerYTMusic_commandRouter, "f").i18nJson(`${__dirname}/i18n/strings_${langCode}.json`, `${__dirname}/i18n/strings_en.json`, `${__dirname}/UIConfig.json`)),
-            __classPrivateFieldGet(this, _ControllerYTMusic_instances, "m", _ControllerYTMusic_getConfigI18nOptions).call(this),
-            __classPrivateFieldGet(this, _ControllerYTMusic_instances, "m", _ControllerYTMusic_getConfigAccountInfo).call(this)
+            hasAcceptedDisclaimer ? __classPrivateFieldGet(this, _ControllerYTMusic_instances, "m", _ControllerYTMusic_getConfigI18nOptions).call(this) : Promise.resolve(null),
+            hasAcceptedDisclaimer ? __classPrivateFieldGet(this, _ControllerYTMusic_instances, "m", _ControllerYTMusic_getConfigAccountInfo).call(this) : Promise.resolve(null)
         ];
         Promise.all(loadConfigPromises)
             .then(([uiconf, i18nOptions, account]) => {
-            const i18nUIConf = uiconf.sections[0];
-            const accountUIConf = uiconf.sections[1];
-            const browseUIConf = uiconf.sections[2];
-            const playbackUIConf = uiconf.sections[3];
+            const disclaimerUIConf = uiconf.sections[0];
+            const i18nUIConf = uiconf.sections[1];
+            const accountUIConf = uiconf.sections[2];
+            const browseUIConf = uiconf.sections[3];
+            const playbackUIConf = uiconf.sections[4];
+            // Disclaimer
+            disclaimerUIConf.content[1].value = hasAcceptedDisclaimer;
+            if (!hasAcceptedDisclaimer) {
+                // hasAcceptedDisclaimer is false
+                uiconf.sections = [disclaimerUIConf];
+                return defer.resolve(uiconf);
+            }
             // I18n
             // -- region
             i18nUIConf.content[0].label = i18nOptions.options.region.label;
@@ -181,6 +191,53 @@ class ControllerYTMusic {
     getConfigurationFiles() {
         return ['config.json'];
     }
+    showDisclaimer() {
+        const langCode = __classPrivateFieldGet(this, _ControllerYTMusic_commandRouter, "f").sharedVars.get('language_code');
+        let disclaimerFile = `${__dirname}/i18n/disclaimer_${langCode}.html`;
+        if (!(0, fs_1.existsSync)(disclaimerFile)) {
+            disclaimerFile = `${__dirname}/i18n/disclaimer_en.html`;
+        }
+        try {
+            const contents = (0, fs_1.readFileSync)(disclaimerFile, { encoding: 'utf8' });
+            const modalData = {
+                title: YTMusicContext_1.default.getI18n('YTMUSIC_DISCLAIMER_HEADING'),
+                message: contents,
+                size: 'lg',
+                buttons: [
+                    {
+                        name: YTMusicContext_1.default.getI18n('YTMUSIC_CLOSE'),
+                        class: 'btn btn-warning'
+                    },
+                    {
+                        name: YTMusicContext_1.default.getI18n('YTMUSIC_ACCEPT'),
+                        class: 'btn btn-info',
+                        emit: 'callMethod',
+                        payload: {
+                            type: 'controller',
+                            endpoint: 'music_service/ytmusic',
+                            method: 'acceptDisclaimer',
+                            data: ''
+                        }
+                    }
+                ]
+            };
+            YTMusicContext_1.default.volumioCoreCommand.broadcastMessage("openModal", modalData);
+        }
+        catch (error) {
+            YTMusicContext_1.default.getLogger().error(`[ytmusic] ${YTMusicContext_1.default.getErrorMessage(`Error reading "${disclaimerFile}"`, error, false)}`);
+            YTMusicContext_1.default.toast('error', 'Error loading disclaimer contents');
+        }
+    }
+    acceptDisclaimer() {
+        this.configSaveDisclaimer({
+            hasAcceptedDisclaimer: true
+        });
+    }
+    configSaveDisclaimer(data) {
+        YTMusicContext_1.default.setConfigValue('hasAcceptedDisclaimer', data.hasAcceptedDisclaimer);
+        YTMusicContext_1.default.toast('success', YTMusicContext_1.default.getI18n('YTMUSIC_SETTINGS_SAVED'));
+        YTMusicContext_1.default.refreshUIConfig();
+    }
     async configSaveI18n(data) {
         const oldRegion = YTMusicContext_1.default.hasConfigKey('region') ? YTMusicContext_1.default.getConfigValue('region') : null;
         const oldLanguage = YTMusicContext_1.default.hasConfigKey('language') ? YTMusicContext_1.default.getConfigValue('language') : null;
@@ -232,11 +289,21 @@ class ControllerYTMusic {
         if (!__classPrivateFieldGet(this, _ControllerYTMusic_browseController, "f")) {
             return kew_1.default.reject('YouTube Music plugin is not started');
         }
+        if (!YTMusicContext_1.default.getConfigValue('hasAcceptedDisclaimer')) {
+            return kew_1.default.reject({
+                errorMessage: `To access YouTube Music, go to the plugin's settings and accept the Disclaimer.`
+            });
+        }
         return (0, util_1.jsPromiseToKew)(__classPrivateFieldGet(this, _ControllerYTMusic_browseController, "f").browseUri(uri));
     }
     explodeUri(uri) {
         if (!__classPrivateFieldGet(this, _ControllerYTMusic_browseController, "f")) {
-            return kew_1.default.reject('YouTube Music Discover plugin is not started');
+            return kew_1.default.reject('YouTube Music plugin is not started');
+        }
+        if (!YTMusicContext_1.default.getConfigValue('hasAcceptedDisclaimer')) {
+            return kew_1.default.reject({
+                errorMessage: `To access YouTube Music, go to the plugin's settings and accept the Disclaimer.`
+            });
         }
         return (0, util_1.jsPromiseToKew)(__classPrivateFieldGet(this, _ControllerYTMusic_browseController, "f").explodeUri(uri));
     }
