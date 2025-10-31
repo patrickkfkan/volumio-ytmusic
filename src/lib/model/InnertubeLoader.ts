@@ -1,5 +1,5 @@
 import ytmusic from '../YTMusicContext';
-import { InnertubeFactory, InnertubeWrapper, type PotFnResult } from 'volumio-yt-support';
+import { InnertubeFactory, type InnertubeWrapper, type PotFnResult } from 'volumio-yt-support';
 
 export default class InnertubeLoader {
 
@@ -7,6 +7,7 @@ export default class InnertubeLoader {
 
   static async getInstance(): Promise<InnertubeWrapper> {
     if (!this.#instancePromise) {
+      ytmusic.toast('info', ytmusic.getI18n('YTMUSIC_PREPPING_API'));
       this.#instancePromise = InnertubeFactory.getWrappedInstance({
         account: {
           cookie: ytmusic.getConfigValue('cookie') || undefined,
