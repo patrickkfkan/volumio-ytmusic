@@ -16,7 +16,7 @@ import type AutoplayContext from '../../types/AutoplayContext';
 import { type AlbumView } from '../browse/view-handlers/AlbumViewHandler';
 import { type GenericView } from '../browse/view-handlers/GenericViewHandler';
 import EventEmitter from 'events';
-import { AutoplayManager, LastPlaybackInfo } from 'volumio-yt-support';
+import { AutoplayManager, type LastPlaybackInfo } from 'volumio-yt-support';
 
 export default class PlayController {
 
