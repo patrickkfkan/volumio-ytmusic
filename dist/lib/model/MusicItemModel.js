@@ -266,4 +266,3 @@ async function _MusicItemModel_getTrackInfo(innertube, endpoint) {
     };
 };
 exports.default = MusicItemModel;
-//# sourceMappingURL=MusicItemModel.js.map

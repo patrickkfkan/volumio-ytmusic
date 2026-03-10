@@ -186,4 +186,3 @@ _YTMusicContext_singletons = new WeakMap(), _YTMusicContext_data = new WeakMap()
     __classPrivateFieldGet(this, _YTMusicContext_instances, "m", _YTMusicContext_loadI18n).call(this);
 };
 exports.default = new YTMusicContext();
-//# sourceMappingURL=YTMusicContext.js.map

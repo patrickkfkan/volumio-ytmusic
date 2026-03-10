@@ -163,4 +163,3 @@ class YTMusicNowPlayingMetadataProvider {
     }
 }
 exports.default = YTMusicNowPlayingMetadataProvider;
-//# sourceMappingURL=YTMusicNowPlayingMetadataProvider.js.map

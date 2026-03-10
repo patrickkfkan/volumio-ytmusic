@@ -70,10 +70,10 @@ class ControllerYTMusic {
         _ControllerYTMusic_context.set(this, void 0);
         _ControllerYTMusic_config.set(this, void 0);
         _ControllerYTMusic_commandRouter.set(this, void 0);
-        _ControllerYTMusic_browseController.set(this, void 0);
-        _ControllerYTMusic_searchController.set(this, void 0);
-        _ControllerYTMusic_playController.set(this, void 0);
-        _ControllerYTMusic_nowPlayingMetadataProvider.set(this, void 0);
+        _ControllerYTMusic_browseController.set(this, null);
+        _ControllerYTMusic_searchController.set(this, null);
+        _ControllerYTMusic_playController.set(this, null);
+        _ControllerYTMusic_nowPlayingMetadataProvider.set(this, null);
         __classPrivateFieldSet(this, _ControllerYTMusic_context, context, "f");
         __classPrivateFieldSet(this, _ControllerYTMusic_commandRouter, context.coreCommand, "f");
     }
@@ -449,4 +449,3 @@ _ControllerYTMusic_context = new WeakMap(), _ControllerYTMusic_config = new Weak
     __classPrivateFieldGet(this, _ControllerYTMusic_commandRouter, "f").volumioAddToBrowseSources(source);
 };
 module.exports = ControllerYTMusic;
-//# sourceMappingURL=index.js.map
