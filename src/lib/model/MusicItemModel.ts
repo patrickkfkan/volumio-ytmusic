@@ -36,7 +36,17 @@ export default class MusicItemModel extends BaseModel {
       throw Error('Invalid endpoint');
     }
     const { innertube } = await this.getInnertube();
-    const { trackInfo, contentPoToken } = await this.#getTrackInfo(innertube, endpoint);
+    const trackInfo = await this.#getTrackInfo(innertube, endpoint);
+
+    const videoId = endpoint.payload.videoId;
+    let contentPoToken: string | undefined = undefined;
+    try {
+      contentPoToken = (await InnertubeLoader.generatePoToken(videoId)).poToken;
+      ytmusic.getLogger().info(`[ytmusic] Obtained PO token for video #${videoId}: ${contentPoToken}`);
+    }
+    catch (error: unknown) {
+      ytmusic.getLogger().error(ytmusic.getErrorMessage(`[ytmusic] Error obtaining PO token for video #${videoId}:`,error, false));
+    }
     const streamData = await this.#extractStreamData(innertube, trackInfo, contentPoToken );
 
     // `trackInfo` does not contain album info - need to obtain from item in Up Next tab.
@@ -122,8 +132,14 @@ export default class MusicItemModel extends BaseModel {
 
     const nextEndpoint = new YTNodes.NavigationEndpoint({ watchNextEndpoint: { videoId: endpoint.payload.videoId }});
 
-    const contentPoToken = (await InnertubeLoader.generatePoToken(videoId)).poToken;
-    ytmusic.getLogger().info(`[ytmusic] Obtained PO token for video #${videoId}: ${contentPoToken}`);
+    let sessionPoToken: string | undefined;
+    try {
+      sessionPoToken = (await (await InnertubeLoader.getInstance()).getSessionPoToken())?.poToken;
+    }
+    catch (error: unknown) {
+      ytmusic.getLogger().error(ytmusic.getErrorMessage(`[ytmusic] Error obtaining PO token for session:`,error, false));
+      sessionPoToken = undefined;
+    }
 
     const player_response = watchEndpoint.call(innertube.actions, {
       client: 'YTMUSIC',
@@ -136,7 +152,7 @@ export default class MusicItemModel extends BaseModel {
         }
       },
       serviceIntegrityDimensions: {
-        poToken: contentPoToken
+        poToken: sessionPoToken
       }
     });
 
@@ -149,13 +165,10 @@ export default class MusicItemModel extends BaseModel {
 
     const response = await Promise.all([ player_response, next_response ]);
 
-    return {
-      trackInfo: new YTMusic.TrackInfo(response, innertube.actions, cpn),
-      contentPoToken
-    };
+    return new YTMusic.TrackInfo(response, innertube.actions, cpn)
   }
 
-  async #extractStreamData(innertube: Innertube, info: YTMusic.TrackInfo, contentPoToken: string): Promise<MusicItemPlaybackInfo['stream'] | null> {
+  async #extractStreamData(innertube: Innertube, info: YTMusic.TrackInfo, contentPoToken?: string): Promise<MusicItemPlaybackInfo['stream'] | null> {
     const preferredFormat = {
       ...BEST_AUDIO_FORMAT
     };
@@ -193,7 +206,9 @@ export default class MusicItemModel extends BaseModel {
       // Seems YT now requires `pot` to be the *content-bound* token, otherwise we'll get 403.
       // See: https://github.com/TeamNewPipe/NewPipeExtractor/issues/1392
       const urlObj = new URL(decipheredURL);
-      urlObj.searchParams.set('pot', contentPoToken);
+      if (contentPoToken) {
+        urlObj.searchParams.set('pot', contentPoToken);
+      }
       decipheredURL = urlObj.toString();
 
       return {
