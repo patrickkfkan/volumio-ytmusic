@@ -1,3 +1,5 @@
-node_modules
-tests
+.vscode/*
+node_modules/
+dist/
 tsconfig.tsbuildinfo
+tests/
