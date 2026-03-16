@@ -108,6 +108,13 @@
           "value": ""
         },
         {
+          "id": "activeChannelHandle",
+          "element": "select",
+          "label": "TRANSLATE.YTMUSIC_ACTIVE_CHANNEL",
+          "value": {},
+          "options": []
+        },
+        {
           "id": "cookieGuide",
           "element": "button",
           "label": "TRANSLATE.YTMUSIC_COOKIE_GUIDE",
