@@ -6,7 +6,8 @@ export type UIConfigSectionKey =
               'section_i18n' | 
               'section_account' | 
               'section_browse' | 
-              'section_playback';
+              'section_playback' | 
+              'section_yt_dlp';
 
 export type UIConfigSectionContentKeyOf<K extends UIConfigSectionKey> =
   K extends 'section_disclaimer' ?
@@ -32,6 +33,11 @@ export type UIConfigSectionContentKeyOf<K extends UIConfigSectionKey> =
     'addToHistory' | 
     'prefetch' | 
     'preferOpus' :
+
+  K extends 'section_yt_dlp' ?
+    'useYtDlp' | 
+    'ytDlpVersion' | 
+    'installLatestYtDlp' :
 
   never;
 
@@ -67,6 +73,13 @@ export type UIConfigElementOf<K extends UIConfigSectionKey, C extends UIConfigSe
     C extends 'addToHistory' ? UIConfigSwitch<K> :
     C extends 'prefetch' ? UIConfigSwitch<K> :
     C extends 'preferOpus' ? UIConfigSwitch<K> :
+    never
+  ) : 
+
+  K extends 'section_yt_dlp' ? (
+    C extends 'useYtDlp' ? UIConfigSwitch<K> :
+    C extends 'ytDlpVersion' ? UIConfigSelect<K> :
+    C extends 'installLatestYtDlp' ? UIConfigButton<K> :
     never
   ) : 
 

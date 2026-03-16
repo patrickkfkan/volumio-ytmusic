@@ -20,6 +20,7 @@ import { type NowPlayingPluginSupport } from 'now-playing-common';
 import { Parser } from 'volumio-yt-support/dist/innertube';
 import { existsSync, readFileSync } from 'fs';
 import UIConfigHelper from './config/UIConfigHelper';
+import { YtDlpWrapper } from './lib/util/YtDlp';
 
 interface GotoParams extends QueueItem {
   type: 'album' | 'artist';
@@ -70,6 +71,7 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
     const accountUIConf = uiconf.section_account;
     const browseUIConf = uiconf.section_browse;
     const playbackUIConf = uiconf.section_playback;
+    const ytDlpUIConf = uiconf.section_yt_dlp;
 
     // Disclaimer
     disclaimerUIConf.content.hasAcceptedDisclaimer.value = hasAcceptedDisclaimer;
@@ -130,6 +132,39 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
     playbackUIConf.content.addToHistory.value = addToHistory;
     playbackUIConf.content.prefetch.value = prefetchEnabled;
     playbackUIConf.content.preferOpus.value = preferOpus;
+
+
+    // yt-dlp
+    ytDlpUIConf.content.useYtDlp.value = ytmusic.getConfigValue('useYtDlp');
+    const ytDlpVersion = ytmusic.getConfigValue('ytDlpVersion');
+    const ytDlp = YtDlpWrapper.getInstance();
+    const installedYDlpVersions = ytDlp.getInstalled();
+    const ytDlpVersionOptions = installedYDlpVersions.length > 0 ? installedYDlpVersions.map(({version}, i) => ({
+      label: i === 0 ? ytmusic.getI18n('YTMUSIC_VERSION_LATEST', version) : version,
+      value: version
+    })) : [{
+      label: ytmusic.getI18n('YTMUSIC_NONE_INSTALLED'),
+      value: ''
+    }];
+    const selectedYtDlpVersionOption = (ytDlpVersion && ytDlpVersionOptions.length > 1 ? ytDlpVersionOptions.find(({value}) => value === ytDlpVersion) : null) || ytDlpVersionOptions[0];
+    ytDlpUIConf.content.ytDlpVersion.options = ytDlpVersionOptions;
+    ytDlpUIConf.content.ytDlpVersion.value = selectedYtDlpVersionOption;
+    let latestAvailable;
+    try {
+      latestAvailable = await ytDlp.getLatestVersion();
+    }
+    catch (error: unknown) {
+      ytmusic.getLogger().error(ytmusic.getErrorMessage('[ytmusic] Failed to get latest yt-dlp version:', error));
+      ytmusic.toast('error', ytmusic.getI18n('YTMUSIC_ERR_GET_LATEST_YT_DLP_VER'));
+      latestAvailable = null;
+    }
+    const latestInstalled = installedYDlpVersions[0]?.version || null;
+    if (latestInstalled && latestAvailable && (new Date(latestAvailable).getTime() - new Date(latestInstalled).getTime() > 0)) {
+      ytDlpUIConf.description = ytmusic.getI18n('YTMUSIC_YT_DLP_NEWER_AVAIL', latestAvailable);
+    }
+    if (!latestAvailable || latestInstalled === latestAvailable) {
+      ytDlpUIConf.content.installLatestYtDlp.hidden = true;
+    }
 
     return uiconf;
   }
@@ -303,6 +338,7 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
       ytmusic.setConfigValue('activeChannelHandle', activeChannelHandle);
       resetInnertube =  true;
     }
+    YtDlpWrapper.refresh();
     ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_SETTINGS_SAVED'));
     if (resetInnertube) {
       await InnertubeLoader.reset();
@@ -324,6 +360,38 @@ class ControllerYTMusic implements NowPlayingPluginSupport {
     ytmusic.setConfigValue('preferOpus', data.preferOpus);
 
     ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_SETTINGS_SAVED'));
+  }
+
+
+  configSaveYtDlp(data: any) {
+    const useYtDlp = data.useYtDlp;
+    if (useYtDlp) {
+      const installed = YtDlpWrapper.getInstance().getInstalled();
+      if (installed.length === 0) {
+        ytmusic.toast('error', ytmusic.getI18n('YTMUSIC_ERR_USE_YT_DLP_BUT_NONE_INSTALLED'));
+        ytmusic.setConfigValue('useYtDlp', false);
+        return ytmusic.refreshUIConfig();
+      }
+    }
+    ytmusic.setConfigValue('useYtDlp', useYtDlp);
+    const ytDlpVersion = data.ytDlpVersion.value || null;
+    ytmusic.setConfigValue('ytDlpVersion', ytDlpVersion);
+    ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_SETTINGS_SAVED'));
+  }
+
+  async installLatestYtDlp() {
+    const ytDlp = YtDlpWrapper.getInstance();
+    ytmusic.toast('info', ytmusic.getI18n('YTMUSIC_YT_DLP_INSTALLING'));
+    try {
+      const result = await ytDlp.install();
+      ytmusic.toast('success', ytmusic.getI18n('YTMUSIC_YT_DLP_INSTALLED', result.version));
+      ytmusic.setConfigValue('ytDlpVersion', result.version);
+      ytmusic.refreshUIConfig();
+    }
+    catch (error: unknown) {
+      ytmusic.getLogger().log('error', ytmusic.getErrorMessage('Error installing yt-dlp:', error));
+      ytmusic.toast('error', ytmusic.getErrorMessage('Failed to install yt-dlp:', error, false));
+    }
   }
 
   #addToBrowseSources() {

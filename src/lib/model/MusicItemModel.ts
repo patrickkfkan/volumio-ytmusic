@@ -9,6 +9,7 @@ import type MusicItemPlaybackInfo from '../types/MusicItemPlaybackInfo';
 import { type ContentItem } from '../types';
 import EndpointHelper from '../util/EndpointHelper';
 import InnertubeLoader from './InnertubeLoader';
+import { YtDlpWrapper } from '../util/YtDlp';
 
 // https://gist.github.com/sidneys/7095afe4da4ae58694d128b1034e01e2
 // https://gist.github.com/MartinEesmaa/2f4b261cb90a47e9c41ba115a011a4aa
@@ -31,10 +32,48 @@ const BEST_AUDIO_FORMAT: Types.FormatOptions = {
 
 export default class MusicItemModel extends BaseModel {
 
-  async getPlaybackInfo(endpoint: Endpoint, signal?: AbortSignal): Promise<MusicItemPlaybackInfo | null> {
+  async getPlaybackInfo(
+    endpoint: Endpoint,
+    isPrefetch = false,
+    skipStream = false,
+    signal?: AbortSignal
+  ): Promise<MusicItemPlaybackInfo | null> {
     if (!EndpointHelper.isType(endpoint, EndpointType.Watch) || !endpoint.payload.videoId) {
       throw Error('Invalid endpoint');
     }
+    const useYtDlp = ytmusic.getConfigValue('useYtDlp');
+    if (useYtDlp && isPrefetch) {
+      throw Error(`Cannot prefetch with yt-dlp as time taken will exceed Volumio's limit`);
+    }
+    if (!skipStream && useYtDlp) {
+      const [info, url] = await Promise.all([
+        this.#doGetPlaybackInfo(endpoint, true, signal),
+        YtDlpWrapper.getInstance().getStreamingUrl(
+          `https://music.youtube.com/watch?v=${encodeURIComponent(endpoint.payload.videoId)}`,
+          ytmusic.getConfigValue('ytDlpVersion') ?? undefined
+        ).catch((error: unknown) => {
+          ytmusic.getLogger().error(ytmusic.getErrorMessage('Failed to get streaming URL with yt-dlp:', error, false));
+          return null;
+        })
+      ]);
+      if (info && url) {
+        const itag = new URL(url).searchParams.get('itag');
+        const bitrate = itag ? ITAG_TO_BITRATE[itag] : null;
+        info.stream = {
+          url,
+          bitrate: bitrate ? `${bitrate} kbps` : undefined
+        };
+      }
+      return info;
+    }
+    return this.#doGetPlaybackInfo(endpoint, skipStream, signal);
+  }
+
+  async #doGetPlaybackInfo(
+    endpoint: Endpoint,
+    skipStream = false,
+    signal?: AbortSignal
+  ): Promise<MusicItemPlaybackInfo | null> {
     const { innertube } = await this.getInnertube();
     const trackInfo = await this.#getTrackInfo(innertube, endpoint);
 
@@ -47,7 +86,7 @@ export default class MusicItemModel extends BaseModel {
     catch (error: unknown) {
       ytmusic.getLogger().error(ytmusic.getErrorMessage(`[ytmusic] Error obtaining PO token for video #${videoId}:`,error, false));
     }
-    const streamData = await this.#extractStreamData(innertube, trackInfo, contentPoToken );
+    const streamData = skipStream ? null : await this.#extractStreamData(innertube, trackInfo, contentPoToken );
 
     // `trackInfo` does not contain album info - need to obtain from item in Up Next tab.
     const infoFromUpNextTab = this.#getInfoFromUpNextTab(trackInfo, endpoint);
