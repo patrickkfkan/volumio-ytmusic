@@ -1,6 +1,6 @@
 import ytmusic from '../YTMusicContext';
-import {type Innertube, type Types} from 'volumio-yt-support/dist/innertube';
-import { YTNodes, Utils as YTUtils, YTMusic, Parser } from 'volumio-yt-support/dist/innertube';
+import {Innertube, type Types} from 'volumio-yt-support/dist/innertube';
+import { YTNodes, Utils as YTUtils, YTMusic } from 'volumio-yt-support/dist/innertube';
 import { BaseModel } from './BaseModel';
 import InnertubeResultParser from './InnertubeResultParser';
 import type Endpoint from '../types/Endpoint';
@@ -31,6 +31,15 @@ const BEST_AUDIO_FORMAT: Types.FormatOptions = {
 };
 
 export default class MusicItemModel extends BaseModel {
+
+  /**
+   * We use YTMUSIC_ANDROID client for retrieving lyrics because it
+   * provides synced versions where available. This client does
+   * not support account cookies and will return 400 ("invalid argument")
+   * error if we pass account cookies in requests. We can ensure this won't
+   * happen by using a separate Innertube instance.
+   */
+  #innertubeForLyrics: Innertube | null = null;
 
   async getPlaybackInfo(
     endpoint: Endpoint,
@@ -282,35 +291,28 @@ export default class MusicItemModel extends BaseModel {
     return InnertubeResultParser.parseContentItem(match);
   }
 
-  async #getLyricsId(videoId: string) {
-    const { innertube } = await this.getInnertube();
-    const response = await innertube.actions.execute('/next', {
-      videoId,
-      client: 'YTMUSIC_ANDROID'
-    });
-    const parsed = Parser.parseResponse(response.data);
-    const tabs = parsed.contents_memo?.getType(YTNodes.Tab);
-    const tab = tabs?.matchCondition((tab) => tab.endpoint.payload.browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType === 'MUSIC_PAGE_TYPE_TRACK_LYRICS');
-    if (!tab) {
-      throw Error('Could not find lyrics tab.');
-    }
-    const lyricsId = tab.endpoint.payload.browseId;
-    if (!lyricsId) {
-      throw Error('No lyrics ID found in endpoint');
-    }
-    return lyricsId;
-  }
-
   async getLyrics(videoId: string) {
-    const { innertube } = await this.getInnertube();
-    const lyricsId = await this.#getLyricsId(videoId);
-    const payload = {
-      browseId: lyricsId,
-      client: 'YTMUSIC_ANDROID'
-    };
-    const response = await innertube.actions.execute('/browse', payload);
-    const parsed = Parser.parseResponse(response.data);
-    return InnertubeResultParser.parseLyrics(parsed);
+    if (!this.#innertubeForLyrics) {
+      this.#innertubeForLyrics = await Innertube.create();
+    }
+    const innertube = this.#innertubeForLyrics;
+    const watchNextEndpoint = new YTNodes.NavigationEndpoint({ watchNextEndpoint: { videoId } });
+    const watchNextResponse = await watchNextEndpoint.call(innertube.actions, { client: 'YTMUSIC_ANDROID', parse: true });
+    const tabs = watchNextResponse.contents_memo?.getType(YTNodes.Tab);
+    const tab = tabs?.find((tab) => tab.endpoint.payload.browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType === 'MUSIC_PAGE_TYPE_TRACK_LYRICS');
+    if (!tab) {
+        throw Error('Lyrics tab not found');
+    }
+    const page = await tab.endpoint.call(innertube.actions, { client: 'YTMUSIC_ANDROID', parse: true });
+
+    if (!page.contents)
+      throw new Error('Unexpected response from lyrics tab endpoint');
+
+    const lyrics = InnertubeResultParser.parseLyrics(page);
+    if (!lyrics) {
+      ytmusic.getLogger().verbose(`No lyrics found. Page content is: ${JSON.stringify(page.contents.item())}`);
+    }
+    return lyrics;
   }
 
   #sleep(ms: number) {
